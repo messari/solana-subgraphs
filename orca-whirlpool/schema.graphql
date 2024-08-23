@@ -1,0 +1,12 @@
+type OrcaSwap @entity {
+  id: ID!
+
+  amount: BigInt!
+  other_amount_threshold: BigInt!
+  sqrt_price_limit: BigInt!
+
+  amount_specified_is_input: Boolean!
+  a_to_b: Boolean!
+
+  signature: String!
+}

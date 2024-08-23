@@ -1,0 +1,36 @@
+specVersion: v0.1.0
+package:
+  name: 'orca_whirlpool_substream'
+  version: v0.1.0
+
+imports:
+  entity: https://github.com/streamingfast/substreams-sink-entity-changes/releases/download/v1.3.2/substreams-sink-entity-changes-v1.3.2.spkg
+
+protobuf:
+  files:
+    - output.proto
+  importPaths:
+    - ./proto
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: target/wasm32-unknown-unknown/release/substreams.wasm
+
+modules:
+  - name: map_block
+    kind: map
+    initialBlock: 112419322
+    inputs:
+      - source: sf.solana.type.v1.Block
+    output:
+      type: proto:messari.orca_whirlpool.v1.OrcaSwaps
+
+  - name: graph_out
+    kind: map
+    inputs:
+      - map: map_block
+    output:
+      type: proto:substreams.entity.v1.EntityChanges
+
+network: solana

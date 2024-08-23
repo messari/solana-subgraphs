@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package messari.orca_whirlpool.v1;
+
+message OrcaSwaps {
+  repeated Swap data = 1;
+}
+
+message Swap {
+  uint64 amount = 1;
+  
+  uint64 other_amount_threshold = 2;
+  
+  string sqrt_price_limit = 3;
+  
+  bool amount_specified_is_input = 4;
+  
+  bool a_to_b = 5;
+
+  string signature = 6;
+}
