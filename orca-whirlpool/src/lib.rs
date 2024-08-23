@@ -17,7 +17,7 @@ use instructions::{
 };
 use pb::messari::orca_whirlpool::v1::{OrcaSwaps, Swap as OrcaSwap};
 use std::collections::HashSet;
-use substreams::log;
+use substreams::{log, skip_empty_output};
 use substreams_entity_change::pb::entity::{entity_change, EntityChange, EntityChanges};
 use substreams_solana::pb::sf::solana::r#type::v1::{
     Block, CompiledInstruction, InnerInstruction, InnerInstructions, Message, MessageHeader,
@@ -27,6 +27,8 @@ use utils::{idl_discriminator, string_to_bigint, txn_pre_checks};
 
 #[substreams::handlers::map]
 fn map_block(block: Block) -> Result<OrcaSwaps, substreams::errors::Error> {
+    skip_empty_output();
+
     let mut data: Vec<OrcaSwap> = Vec::new();
 
     for confirmed_txn in block.transactions() {
@@ -125,6 +127,7 @@ fn map_block(block: Block) -> Result<OrcaSwaps, substreams::errors::Error> {
 
 #[substreams::handlers::map]
 fn graph_out(events: OrcaSwaps) -> Result<EntityChanges, ()> {
+    skip_empty_output();
     let mut entity_changes: Vec<EntityChange> = vec![];
 
     for swap in events.data.iter() {
