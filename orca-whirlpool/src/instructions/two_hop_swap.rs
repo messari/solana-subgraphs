@@ -7,12 +7,19 @@ use substreams_solana::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct TwoHopSwapInstruction {
+    /// The amount of input or output token to swap from (depending on amount_specified_is_input).
     pub amount: u64,
+    /// The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).
     pub other_amount_threshold: u64,
+    /// Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.
     pub amount_specified_is_input: bool,
+    /// The direction of the swap of hop one. True if swapping from A to B. False if swapping from B to A.
     pub a_to_b_one: bool,
+    /// The direction of the swap of hop two. True if swapping from A to B. False if swapping from B to A.
     pub a_to_b_two: bool,
+    /// The maximum/minimum price the swap will swap to in the first hop.
     pub sqrt_price_limit_one: u128,
+    /// The maximum/minimum price the swap will swap to in the second hop.
     pub sqrt_price_limit_two: u128,
 }
 

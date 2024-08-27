@@ -7,9 +7,12 @@ use substreams_solana::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct DecreaseLiquidityInstruction {
+    // The total amount of Liquidity the user desires to withdraw.
     pub liquidity_amount: u128,
-    pub token_max_a: u64,
-    pub token_max_b: u64,
+    // The minimum amount of tokenA the user is willing to withdraw.
+    pub token_min_a: u64,
+    // The minimum amount of tokenB the user is willing to withdraw.
+    pub token_min_b: u64,
 }
 
 #[derive(AccountsDeserialize, Debug)]

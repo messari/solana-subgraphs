@@ -7,8 +7,11 @@ use substreams_solana::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct IncreaseLiquidityInstruction {
+    // The total amount of Liquidity the user is willing to deposit.
     pub liquidity_amount: u128,
+    // The maximum amount of tokenA the user is willing to deposit.
     pub token_max_a: u64,
+    // The maximum amount of tokenB the user is willing to deposit.
     pub token_max_b: u64,
 }
 
