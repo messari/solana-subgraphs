@@ -105,8 +105,8 @@ message DecreaseLiquidity {
 
   message DecreaseLiquidityInstruction {
       string liquidity_amount = 1;
-      uint64 token_max_a = 2;
-      uint64 token_max_b = 3;
+      uint64 token_min_a = 2;
+      uint64 token_min_b = 3;
   }
 
   message DecreaseLiquidityInstructionAccounts {

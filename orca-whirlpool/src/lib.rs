@@ -136,8 +136,8 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                             Some(DecreaseLiquidityType(DecreaseLiquidity {
                                 instruction: Some(DecreaseLiquidityInstruction {
                                     liquidity_amount: instruction.liquidity_amount.to_string(),
-                                    token_max_a: instruction.token_max_a,
-                                    token_max_b: instruction.token_max_b,
+                                    token_min_a: instruction.token_min_a,
+                                    token_min_b: instruction.token_min_b,
                                 }),
                                 accounts: Some(DecreaseLiquidityInstructionAccounts {
                                     whirlpool: accounts.whirlpool.to_string(),
@@ -314,8 +314,8 @@ fn graph_out(events: Events) -> Result<EntityChanges, ()> {
                         "liquidity_amount",
                         string_to_bigint(instruction.liquidity_amount),
                     )
-                    .change("token_max_a", BigInt::from(instruction.token_max_a))
-                    .change("token_max_b", BigInt::from(instruction.token_max_b))
+                    .change("token_min_a", BigInt::from(instruction.token_min_a))
+                    .change("token_min_b", BigInt::from(instruction.token_min_b))
                     .change("slot", BigInt::from(event.slot))
                     .change("txn_id", event.txn_id.clone())
                     .change("block_height", BigInt::from(event.block_height))

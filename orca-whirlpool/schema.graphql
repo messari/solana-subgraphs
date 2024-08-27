@@ -30,8 +30,8 @@ type DecreaseLiquidity @entity {
   id: ID!
 
   liquidity_amount: BigInt!
-  token_max_a: BigInt!
-  token_max_b: BigInt!
+  token_min_a: BigInt!
+  token_min_b: BigInt!
 
   slot: BigInt!
   txn_id: String!
