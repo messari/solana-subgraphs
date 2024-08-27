@@ -15,16 +15,16 @@ protobuf:
 binaries:
   default:
     type: wasm/rust-v1
-    file: target/wasm32-unknown-unknown/release/substreams.wasm
+    file: ../target/wasm32-unknown-unknown/release/orca_whirlpool.wasm
 
 modules:
   - name: map_block
     kind: map
-    initialBlock: 112419322
+    initialBlock: 126272054
     inputs:
       - source: sf.solana.type.v1.Block
     output:
-      type: proto:messari.orca_whirlpool.v1.OrcaSwaps
+      type: proto:messari.orca_whirlpool.v1.Events
 
   - name: graph_out
     kind: map

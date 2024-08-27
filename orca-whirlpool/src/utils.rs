@@ -29,7 +29,7 @@ pub fn txn_pre_checks(
     Some((txn, txn_meta, txn_messages))
 }
 
-pub fn idl_discriminator(inst_name: &str) -> [u8; 8] {
+pub fn _idl_discriminator(inst_name: &str) -> [u8; 8] {
     let preimage = format!("global:{}", inst_name);
     let hash = Sha256::digest(preimage.as_bytes());
 

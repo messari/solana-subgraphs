@@ -1,0 +1,35 @@
+# IDE & Editor Directories
+.vscode/
+.idea/
+Reference/
+
+# Rust-specific Directories
+/target/
+**/target/
+/build/
+**/build/
+
+# Environment & Config Files
+.envrc
+buf.gen.yaml
+*.dev.yaml
+**/buf.gen.yaml
+/configs/substream/*.index.yaml
+
+# Rust-specific Files
+Cargo.lock
+
+# Substreams Files
+*/pb/
+**/data/
+**/*.spkg
+*.spkg
+/sink
+/debug.log
+/replay.log
+
+# Miscellaneous
+*~
+/env/
+/node_modules/
+deploy.sh
