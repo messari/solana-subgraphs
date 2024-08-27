@@ -20,7 +20,7 @@ buf.gen.yaml
 Cargo.lock
 
 # Substreams Files
-*/pb/
+**/pb/
 **/data/
 **/*.spkg
 *.spkg
