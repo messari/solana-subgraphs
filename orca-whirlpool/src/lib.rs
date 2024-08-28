@@ -39,7 +39,7 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
     let mut data: Vec<Event> = Vec::new();
 
     for confirmed_txn in block.transactions() {
-        for instruction in confirmed_txn.instructions().into_iter() {
+        for instruction in confirmed_txn.walk_instructions() {
             if instruction.program_id().to_string() != constants::ORCA_WHIRLPOOL {
                 continue;
             }
