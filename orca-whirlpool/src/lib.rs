@@ -10,7 +10,7 @@ use pb::messari::orca_whirlpool::v1::decrease_liquidity::{
     DecreaseLiquidityInstruction, DecreaseLiquidityInstructionAccounts,
 };
 use pb::messari::orca_whirlpool::v1::event::Type::{
-    DecreaseLiquidity as DecreaseLiquidityType, IncreaseLiquidity as IncreaseLiquidityType,
+    self, DecreaseLiquidity as DecreaseLiquidityType, IncreaseLiquidity as IncreaseLiquidityType,
     InitalizePool as InitalizePoolType, Swap as SwapType, TwoHopSwap as TwoHopSwapType,
 };
 use pb::messari::orca_whirlpool::v1::increase_liquidity::{
@@ -30,7 +30,7 @@ use substreams::scalar::BigInt;
 use substreams::skip_empty_output;
 use substreams_entity_change::pb::entity::{entity_change, EntityChange, EntityChanges};
 use substreams_solana::pb::sf::solana::r#type::v1::Block;
-use utils::{string_to_bigint, txn_pre_checks};
+use utils::string_to_bigint;
 
 #[substreams::handlers::map]
 fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
@@ -39,227 +39,194 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
     let mut data: Vec<Event> = Vec::new();
 
     for confirmed_txn in block.transactions() {
-        let (txn, _txn_meta, txn_messages) = match txn_pre_checks(&confirmed_txn) {
-            Some(details) => details,
-            None => continue,
-        };
-
-        for instr in txn_messages.instructions.iter() {
-            let program = confirmed_txn.account_at(instr.program_id_index as u8);
-
-            if program.to_string() != constants::ORCA_WHIRLPOOL {
+        for instruction in confirmed_txn.instructions().into_iter() {
+            if instruction.program_id().to_string() != constants::ORCA_WHIRLPOOL {
                 continue;
             }
 
-            if let Some(decoded_instruction) = OrcaInstructions::from(instr, confirmed_txn) {
+            let mut instruction_data: Option<Type> = None;
+
+            if let Some(decoded_instruction) = OrcaInstructions::from(&instruction) {
                 match decoded_instruction {
                     OrcaInstructions::InitializePool {
-                        instruction,
-                        accounts,
-                    } => data.push(Event {
-                        slot: block.slot.clone(),
-                        txn_id: txn.id().clone(),
-                        block_height: block.block_height.clone().unwrap_or_default().block_height,
-                        block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,
-                        block_hash: block.blockhash.clone(),
-                        r#type: {
-                            Some(InitalizePoolType(InitializePool {
-                                instruction: Some(InitializePoolInstruction {
-                                    bumps: instruction.bumps.whirlpool_bump as u32,
-                                    tick_spacing: instruction.tick_spacing as u32,
-                                    initial_sqrt_price: instruction.initial_sqrt_price.to_string(),
-                                }),
-                                accounts: Some(InitializePoolInstructionAccounts {
-                                    whirlpools_config: accounts.whirlpools_config.to_string(),
-                                    token_mint_a: accounts.token_mint_a.to_string(),
-                                    token_mint_b: accounts.token_mint_b.to_string(),
-                                    funder: accounts.funder.to_string(),
-                                    whirlpool: accounts.whirlpool.to_string(),
-                                    token_vault_a: accounts.token_vault_a.to_string(),
-                                    token_vault_b: accounts.token_vault_b.to_string(),
-                                    fee_tier: accounts.fee_tier.to_string(),
-                                    token_program: accounts.token_program.to_string(),
-                                    system_program: accounts.system_program.to_string(),
-                                    rent: accounts.rent.to_string(),
-                                }),
-                            }))
-                        },
-                    }),
+                        data,
+                        input_accounts,
+                    } => {
+                        instruction_data = Some(InitalizePoolType(InitializePool {
+                            instruction: Some(InitializePoolInstruction {
+                                bumps: data.bumps.whirlpool_bump as u32,
+                                tick_spacing: data.tick_spacing as u32,
+                                initial_sqrt_price: data.initial_sqrt_price.to_string(),
+                            }),
+                            accounts: Some(InitializePoolInstructionAccounts {
+                                whirlpools_config: input_accounts.whirlpools_config.to_string(),
+                                token_mint_a: input_accounts.token_mint_a.to_string(),
+                                token_mint_b: input_accounts.token_mint_b.to_string(),
+                                funder: input_accounts.funder.to_string(),
+                                whirlpool: input_accounts.whirlpool.to_string(),
+                                token_vault_a: input_accounts.token_vault_a.to_string(),
+                                token_vault_b: input_accounts.token_vault_b.to_string(),
+                                fee_tier: input_accounts.fee_tier.to_string(),
+                                token_program: input_accounts.token_program.to_string(),
+                                system_program: input_accounts.system_program.to_string(),
+                                rent: input_accounts.rent.to_string(),
+                            }),
+                        }))
+                    }
                     OrcaInstructions::IncreaseLiquidity {
-                        instruction,
-                        accounts,
-                    } => data.push(Event {
-                        slot: block.slot.clone(),
-                        txn_id: txn.id().clone(),
-                        block_height: block.block_height.clone().unwrap_or_default().block_height,
-                        block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,
-                        block_hash: block.blockhash.clone(),
-                        r#type: {
-                            Some(IncreaseLiquidityType(IncreaseLiquidity {
-                                instruction: Some(IncreaseLiquidityInstruction {
-                                    liquidity_amount: instruction.liquidity_amount.to_string(),
-                                    token_max_a: instruction.token_max_a,
-                                    token_max_b: instruction.token_max_b,
-                                }),
-                                accounts: Some(IncreaseLiquidityInstructionAccounts {
-                                    whirlpool: accounts.whirlpool.to_string(),
-                                    token_program: accounts.token_program.to_string(),
-                                    position_authority: accounts.position_authority.to_string(),
-                                    position: accounts.position.to_string(),
-                                    position_token_account: accounts
-                                        .position_token_account
-                                        .to_string(),
-                                    token_owner_account_a: accounts
-                                        .token_owner_account_a
-                                        .to_string(),
-                                    token_owner_account_b: accounts
-                                        .token_owner_account_b
-                                        .to_string(),
-                                    token_vault_a: accounts.token_vault_a.to_string(),
-                                    token_vault_b: accounts.token_vault_b.to_string(),
-                                    tick_array_lower: accounts.tick_array_lower.to_string(),
-                                    tick_array_upper: accounts.tick_array_upper.to_string(),
-                                }),
-                            }))
-                        },
-                    }),
+                        data,
+                        input_accounts,
+                    } => {
+                        instruction_data = Some(IncreaseLiquidityType(IncreaseLiquidity {
+                            instruction: Some(IncreaseLiquidityInstruction {
+                                liquidity_amount: data.liquidity_amount.to_string(),
+                                token_max_a: data.token_max_a,
+                                token_max_b: data.token_max_b,
+                            }),
+                            accounts: Some(IncreaseLiquidityInstructionAccounts {
+                                whirlpool: input_accounts.whirlpool.to_string(),
+                                token_program: input_accounts.token_program.to_string(),
+                                position_authority: input_accounts.position_authority.to_string(),
+                                position: input_accounts.position.to_string(),
+                                position_token_account: input_accounts
+                                    .position_token_account
+                                    .to_string(),
+                                token_owner_account_a: input_accounts
+                                    .token_owner_account_a
+                                    .to_string(),
+                                token_owner_account_b: input_accounts
+                                    .token_owner_account_b
+                                    .to_string(),
+                                token_vault_a: input_accounts.token_vault_a.to_string(),
+                                token_vault_b: input_accounts.token_vault_b.to_string(),
+                                tick_array_lower: input_accounts.tick_array_lower.to_string(),
+                                tick_array_upper: input_accounts.tick_array_upper.to_string(),
+                            }),
+                        }))
+                    }
                     OrcaInstructions::DecreaseLiquidity {
-                        instruction,
-                        accounts,
-                    } => data.push(Event {
-                        slot: block.slot.clone(),
-                        txn_id: txn.id().clone(),
-                        block_height: block.block_height.clone().unwrap_or_default().block_height,
-                        block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,
-                        block_hash: block.blockhash.clone(),
-                        r#type: {
-                            Some(DecreaseLiquidityType(DecreaseLiquidity {
-                                instruction: Some(DecreaseLiquidityInstruction {
-                                    liquidity_amount: instruction.liquidity_amount.to_string(),
-                                    token_min_a: instruction.token_min_a,
-                                    token_min_b: instruction.token_min_b,
-                                }),
-                                accounts: Some(DecreaseLiquidityInstructionAccounts {
-                                    whirlpool: accounts.whirlpool.to_string(),
-                                    token_program: accounts.token_program.to_string(),
-                                    position_authority: accounts.position_authority.to_string(),
-                                    position: accounts.position.to_string(),
-                                    position_token_account: accounts
-                                        .position_token_account
-                                        .to_string(),
-                                    token_owner_account_a: accounts
-                                        .token_owner_account_a
-                                        .to_string(),
-                                    token_owner_account_b: accounts
-                                        .token_owner_account_b
-                                        .to_string(),
-                                    token_vault_a: accounts.token_vault_a.to_string(),
-                                    token_vault_b: accounts.token_vault_b.to_string(),
-                                    tick_array_lower: accounts.tick_array_lower.to_string(),
-                                    tick_array_upper: accounts.tick_array_upper.to_string(),
-                                }),
-                            }))
-                        },
-                    }),
+                        data,
+                        input_accounts,
+                    } => {
+                        instruction_data = Some(DecreaseLiquidityType(DecreaseLiquidity {
+                            instruction: Some(DecreaseLiquidityInstruction {
+                                liquidity_amount: data.liquidity_amount.to_string(),
+                                token_min_a: data.token_min_a,
+                                token_min_b: data.token_min_b,
+                            }),
+                            accounts: Some(DecreaseLiquidityInstructionAccounts {
+                                whirlpool: input_accounts.whirlpool.to_string(),
+                                token_program: input_accounts.token_program.to_string(),
+                                position_authority: input_accounts.position_authority.to_string(),
+                                position: input_accounts.position.to_string(),
+                                position_token_account: input_accounts
+                                    .position_token_account
+                                    .to_string(),
+                                token_owner_account_a: input_accounts
+                                    .token_owner_account_a
+                                    .to_string(),
+                                token_owner_account_b: input_accounts
+                                    .token_owner_account_b
+                                    .to_string(),
+                                token_vault_a: input_accounts.token_vault_a.to_string(),
+                                token_vault_b: input_accounts.token_vault_b.to_string(),
+                                tick_array_lower: input_accounts.tick_array_lower.to_string(),
+                                tick_array_upper: input_accounts.tick_array_upper.to_string(),
+                            }),
+                        }))
+                    }
                     OrcaInstructions::TwoHopSwap {
-                        instruction,
-                        accounts,
-                    } => data.push(Event {
-                        slot: block.slot.clone(),
-                        txn_id: txn.id().clone(),
-                        block_height: block.block_height.clone().unwrap_or_default().block_height,
-                        block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,
-                        block_hash: block.blockhash.clone(),
-                        r#type: {
-                            Some(TwoHopSwapType(TwoHopSwap {
-                                instruction: Some(TwoHopSwapInstruction {
-                                    amount: instruction.amount,
-                                    other_amount_threshold: instruction.other_amount_threshold,
-                                    amount_specified_is_input: instruction
-                                        .amount_specified_is_input,
-                                    a_to_b_one: instruction.a_to_b_one,
-                                    a_to_b_two: instruction.a_to_b_two,
-                                    sqrt_price_limit_one: instruction
-                                        .sqrt_price_limit_one
-                                        .to_string(),
-                                    sqrt_price_limit_two: instruction
-                                        .sqrt_price_limit_two
-                                        .to_string(),
-                                }),
-                                accounts: Some(TwoHopSwapInstructionAccounts {
-                                    token_program: accounts.token_program.to_string(),
-                                    token_authority: accounts.token_authority.to_string(),
-                                    whirlpool_one: accounts.whirlpool_one.to_string(),
-                                    whirlpool_two: accounts.whirlpool_two.to_string(),
-                                    token_owner_account_one_a: accounts
-                                        .token_owner_account_one_a
-                                        .to_string(),
-                                    token_vault_one_a: accounts.token_vault_one_a.to_string(),
-                                    token_owner_account_one_b: accounts
-                                        .token_owner_account_one_b
-                                        .to_string(),
-                                    token_vault_one_b: accounts.token_vault_one_b.to_string(),
-                                    token_owner_account_two_a: accounts
-                                        .token_owner_account_two_a
-                                        .to_string(),
-                                    token_vault_two_a: accounts.token_vault_two_a.to_string(),
-                                    token_owner_account_two_b: accounts
-                                        .token_owner_account_two_b
-                                        .to_string(),
-                                    token_vault_two_b: accounts.token_vault_two_b.to_string(),
-                                    tick_array_one0: accounts.tick_array_one0.to_string(),
-                                    tick_array_one1: accounts.tick_array_one1.to_string(),
-                                    tick_array_one2: accounts.tick_array_one2.to_string(),
-                                    tick_array_two0: accounts.tick_array_two0.to_string(),
-                                    tick_array_two1: accounts.tick_array_two1.to_string(),
-                                    tick_array_two2: accounts.tick_array_two2.to_string(),
-                                    oracle_one: accounts.oracle_one.to_string(),
-                                    oracle_two: accounts.oracle_two.to_string(),
-                                }),
-                            }))
-                        },
-                    }),
+                        data,
+                        input_accounts,
+                    } => {
+                        instruction_data = Some(TwoHopSwapType(TwoHopSwap {
+                            instruction: Some(TwoHopSwapInstruction {
+                                amount: data.amount,
+                                other_amount_threshold: data.other_amount_threshold,
+                                amount_specified_is_input: data.amount_specified_is_input,
+                                a_to_b_one: data.a_to_b_one,
+                                a_to_b_two: data.a_to_b_two,
+                                sqrt_price_limit_one: data.sqrt_price_limit_one.to_string(),
+                                sqrt_price_limit_two: data.sqrt_price_limit_two.to_string(),
+                            }),
+                            accounts: Some(TwoHopSwapInstructionAccounts {
+                                token_program: input_accounts.token_program.to_string(),
+                                token_authority: input_accounts.token_authority.to_string(),
+                                whirlpool_one: input_accounts.whirlpool_one.to_string(),
+                                whirlpool_two: input_accounts.whirlpool_two.to_string(),
+                                token_owner_account_one_a: input_accounts
+                                    .token_owner_account_one_a
+                                    .to_string(),
+                                token_vault_one_a: input_accounts.token_vault_one_a.to_string(),
+                                token_owner_account_one_b: input_accounts
+                                    .token_owner_account_one_b
+                                    .to_string(),
+                                token_vault_one_b: input_accounts.token_vault_one_b.to_string(),
+                                token_owner_account_two_a: input_accounts
+                                    .token_owner_account_two_a
+                                    .to_string(),
+                                token_vault_two_a: input_accounts.token_vault_two_a.to_string(),
+                                token_owner_account_two_b: input_accounts
+                                    .token_owner_account_two_b
+                                    .to_string(),
+                                token_vault_two_b: input_accounts.token_vault_two_b.to_string(),
+                                tick_array_one0: input_accounts.tick_array_one0.to_string(),
+                                tick_array_one1: input_accounts.tick_array_one1.to_string(),
+                                tick_array_one2: input_accounts.tick_array_one2.to_string(),
+                                tick_array_two0: input_accounts.tick_array_two0.to_string(),
+                                tick_array_two1: input_accounts.tick_array_two1.to_string(),
+                                tick_array_two2: input_accounts.tick_array_two2.to_string(),
+                                oracle_one: input_accounts.oracle_one.to_string(),
+                                oracle_two: input_accounts.oracle_two.to_string(),
+                            }),
+                        }))
+                    }
                     OrcaInstructions::Swap {
-                        instruction,
-                        accounts,
-                    } => data.push(Event {
-                        slot: block.slot.clone(),
-                        txn_id: txn.id().clone(),
-                        block_height: block.block_height.clone().unwrap_or_default().block_height,
-                        block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,
-                        block_hash: block.blockhash.clone(),
-                        r#type: {
-                            Some(SwapType(Swap {
-                                instruction: Some(SwapInstruction {
-                                    amount: instruction.amount,
-                                    other_amount_threshold: instruction.other_amount_threshold,
-                                    sqrt_price_limit: instruction.sqrt_price_limit.to_string(),
-                                    amount_specified_is_input: instruction
-                                        .amount_specified_is_input,
-                                    a_to_b: instruction.a_to_b,
-                                }),
-                                accounts: Some(SwapInstructionAccounts {
-                                    token_program: accounts.token_program.to_string(),
-                                    token_authority: accounts.token_authority.to_string(),
-                                    whirlpool: accounts.whirlpool.to_string(),
-                                    token_owner_account_a: accounts
-                                        .token_owner_account_a
-                                        .to_string(),
-                                    token_vault_a: accounts.token_vault_a.to_string(),
-                                    token_owner_account_b: accounts
-                                        .token_owner_account_b
-                                        .to_string(),
-                                    token_vault_b: accounts.token_vault_b.to_string(),
-                                    tick_array_0: accounts.tick_array_0.to_string(),
-                                    tick_array_1: accounts.tick_array_1.to_string(),
-                                    tick_array_2: accounts.tick_array_2.to_string(),
-                                    oracle: accounts.oracle.to_string(),
-                                }),
-                            }))
-                        },
-                    }),
+                        data,
+                        input_accounts,
+                    } => {
+                        instruction_data = Some(SwapType(Swap {
+                            instruction: Some(SwapInstruction {
+                                amount: data.amount,
+                                other_amount_threshold: data.other_amount_threshold,
+                                sqrt_price_limit: data.sqrt_price_limit.to_string(),
+                                amount_specified_is_input: data.amount_specified_is_input,
+                                a_to_b: data.a_to_b,
+                            }),
+                            accounts: Some(SwapInstructionAccounts {
+                                token_program: input_accounts.token_program.to_string(),
+                                token_authority: input_accounts.token_authority.to_string(),
+                                whirlpool: input_accounts.whirlpool.to_string(),
+                                token_owner_account_a: input_accounts
+                                    .token_owner_account_a
+                                    .to_string(),
+                                token_vault_a: input_accounts.token_vault_a.to_string(),
+                                token_owner_account_b: input_accounts
+                                    .token_owner_account_b
+                                    .to_string(),
+                                token_vault_b: input_accounts.token_vault_b.to_string(),
+                                tick_array_0: input_accounts.tick_array_0.to_string(),
+                                tick_array_1: input_accounts.tick_array_1.to_string(),
+                                tick_array_2: input_accounts.tick_array_2.to_string(),
+                                oracle: input_accounts.oracle.to_string(),
+                            }),
+                        }))
+                    }
                 }
             };
+
+            if instruction_data.is_none() {
+                continue;
+            }
+
+            data.push(Event {
+                slot: block.slot.clone(),
+                txn_id: confirmed_txn.id().clone(),
+                block_height: block.block_height.clone().unwrap_or_default().block_height,
+                block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,
+                block_hash: block.blockhash.clone(),
+                r#type: instruction_data,
+            });
         }
     }
 

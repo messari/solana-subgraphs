@@ -2,7 +2,7 @@ use crate::traits::account_deserialize::AccountsDeserialize;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use derive_deserialize::AccountsDeserialize;
-use substreams_solana::pb::sf::solana::r#type::v1::{CompiledInstruction, ConfirmedTransaction};
+use substreams_solana::block_view::InstructionView;
 use substreams_solana::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]

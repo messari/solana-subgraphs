@@ -3,7 +3,7 @@ use substreams_solana::pb::sf::solana::r#type::v1::{
     ConfirmedTransaction, Message, Transaction, TransactionStatusMeta,
 };
 
-pub fn txn_pre_checks(
+pub fn _txn_pre_checks(
     confirmed_txn: &ConfirmedTransaction,
 ) -> Option<(&Transaction, &TransactionStatusMeta, &Message)> {
     let txn = match confirmed_txn.transaction.as_ref() {

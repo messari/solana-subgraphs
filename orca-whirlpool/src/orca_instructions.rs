@@ -13,91 +13,83 @@ use crate::instructions::two_hop_swap::{TwoHopSwapInstruction, TwoHopSwapInstruc
 use crate::traits::account_deserialize::AccountsDeserialize;
 
 use borsh::BorshDeserialize;
-use substreams_solana::pb::sf::solana::r#type::v1::{CompiledInstruction, ConfirmedTransaction};
+use substreams_solana::block_view::InstructionView;
 
 #[derive(Debug)]
 pub enum OrcaInstructions<'a> {
     InitializePool {
-        instruction: InitializePoolInstruction,
-        accounts: InitializePoolInstructionAccounts<'a>,
+        data: InitializePoolInstruction,
+        input_accounts: InitializePoolInstructionAccounts<'a>,
     },
     IncreaseLiquidity {
-        instruction: IncreaseLiquidityInstruction,
-        accounts: IncreaseLiquidityInstructionAccounts<'a>,
+        data: IncreaseLiquidityInstruction,
+        input_accounts: IncreaseLiquidityInstructionAccounts<'a>,
     },
     DecreaseLiquidity {
-        instruction: DecreaseLiquidityInstruction,
-        accounts: DecreaseLiquidityInstructionAccounts<'a>,
+        data: DecreaseLiquidityInstruction,
+        input_accounts: DecreaseLiquidityInstructionAccounts<'a>,
     },
     TwoHopSwap {
-        instruction: TwoHopSwapInstruction,
-        accounts: TwoHopSwapInstructionAccounts<'a>,
+        data: TwoHopSwapInstruction,
+        input_accounts: TwoHopSwapInstructionAccounts<'a>,
     },
     Swap {
-        instruction: SwapInstruction,
-        accounts: SwapInstructionAccounts<'a>,
+        data: SwapInstruction,
+        input_accounts: SwapInstructionAccounts<'a>,
     },
 }
 
 impl<'a> OrcaInstructions<'a> {
-    pub fn from(
-        compiled_instr: &'a CompiledInstruction,
-        confirmed_txn: &'a ConfirmedTransaction,
-    ) -> Option<Self> {
-        let (tag, mut rest) = compiled_instr.data.split_at(8);
+    pub fn from(instruction_view: &'a InstructionView) -> Option<Self> {
+        let (tag, mut rest) = instruction_view.data().split_at(8);
 
         match tag {
             x if x == &constants::DiscriminatorConstants::INITIALIZE_POOL => {
-                let instruction = InitializePoolInstruction::deserialize(&mut rest).ok()?;
-                let accounts =
-                    InitializePoolInstructionAccounts::deserialize(confirmed_txn, compiled_instr)?;
+                let data = InitializePoolInstruction::deserialize(&mut rest).ok()?;
+                let input_accounts =
+                    InitializePoolInstructionAccounts::deserialize(instruction_view)?;
 
                 return Some(OrcaInstructions::InitializePool {
-                    instruction,
-                    accounts,
+                    data,
+                    input_accounts,
                 });
             }
             x if x == &constants::DiscriminatorConstants::INCREASE_LIQUIDITY => {
-                let instruction = IncreaseLiquidityInstruction::deserialize(&mut rest).ok()?;
-                let accounts = IncreaseLiquidityInstructionAccounts::deserialize(
-                    confirmed_txn,
-                    compiled_instr,
-                )?;
+                let data = IncreaseLiquidityInstruction::deserialize(&mut rest).ok()?;
+                let input_accounts =
+                    IncreaseLiquidityInstructionAccounts::deserialize(instruction_view)?;
 
                 return Some(OrcaInstructions::IncreaseLiquidity {
-                    instruction,
-                    accounts,
+                    data,
+                    input_accounts,
                 });
             }
             x if x == &constants::DiscriminatorConstants::DECREASE_LIQUIDITY => {
-                let instruction = DecreaseLiquidityInstruction::deserialize(&mut rest).ok()?;
-                let accounts = DecreaseLiquidityInstructionAccounts::deserialize(
-                    confirmed_txn,
-                    compiled_instr,
-                )?;
+                let data = DecreaseLiquidityInstruction::deserialize(&mut rest).ok()?;
+                let input_accounts =
+                    DecreaseLiquidityInstructionAccounts::deserialize(instruction_view)?;
 
                 return Some(OrcaInstructions::DecreaseLiquidity {
-                    instruction,
-                    accounts,
+                    data,
+                    input_accounts,
                 });
             }
             x if x == &constants::DiscriminatorConstants::TWO_HOP_SWAP => {
-                let instruction = TwoHopSwapInstruction::deserialize(&mut rest).ok()?;
-                let accounts =
-                    TwoHopSwapInstructionAccounts::deserialize(confirmed_txn, compiled_instr)?;
+                let data = TwoHopSwapInstruction::deserialize(&mut rest).ok()?;
+                let input_accounts = TwoHopSwapInstructionAccounts::deserialize(instruction_view)?;
 
                 return Some(OrcaInstructions::TwoHopSwap {
-                    instruction,
-                    accounts,
+                    data,
+                    input_accounts,
                 });
             }
             x if x == &constants::DiscriminatorConstants::SWAP => {
-                let instruction = SwapInstruction::deserialize(&mut rest).ok()?;
-                let accounts = SwapInstructionAccounts::deserialize(confirmed_txn, compiled_instr)?;
+                let data = SwapInstruction::deserialize(&mut rest).ok()?;
+                let input_accounts = SwapInstructionAccounts::deserialize(instruction_view)?;
 
                 return Some(OrcaInstructions::Swap {
-                    instruction,
-                    accounts,
+                    data,
+                    input_accounts,
                 });
             }
             _ => None,
