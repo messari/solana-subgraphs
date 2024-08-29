@@ -327,6 +327,10 @@ fn graph_out(events: Events) -> Result<EntityChanges, ()> {
                 events_entity_change
                     .change("amount", BigInt::from(instruction.amount))
                     .change("other_amount_threshold", instruction.other_amount_threshold)
+                    .change(
+                        "amount_specified_is_input",
+                        instruction.amount_specified_is_input,
+                    )
                     .change("a_to_b_one", instruction.a_to_b_one)
                     .change("a_to_b_two", instruction.a_to_b_two)
                     .change(
