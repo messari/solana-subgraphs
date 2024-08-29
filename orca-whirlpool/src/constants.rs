@@ -1,3 +1,5 @@
+use substreams_solana::b58;
+
 pub struct DiscriminatorConstants;
 
 impl DiscriminatorConstants {
@@ -20,4 +22,4 @@ impl DiscriminatorConstants {
     pub const _SWAP_V2: [u8; 8] = [43, 4, 237, 11, 26, 201, 30, 98];
 }
 
-pub const ORCA_WHIRLPOOL: &str = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
+pub const ORCA_WHIRLPOOL: [u8; 32] = b58!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");

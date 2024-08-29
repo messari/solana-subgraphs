@@ -40,7 +40,7 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
 
     for confirmed_txn in block.transactions() {
         for instruction in confirmed_txn.walk_instructions() {
-            if instruction.program_id().to_string() != constants::ORCA_WHIRLPOOL {
+            if instruction.program_id() != constants::ORCA_WHIRLPOOL {
                 continue;
             }
 
