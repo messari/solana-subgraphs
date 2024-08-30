@@ -27,10 +27,10 @@ use pb::messari::orca_whirlpool::v1::{
     DecreaseLiquidity, Event, Events, IncreaseLiquidity, InitializePool, Swap, TwoHopSwap,
 };
 use substreams::scalar::BigInt;
-use substreams::skip_empty_output;
+use substreams::{log, skip_empty_output};
 use substreams_entity_change::pb::entity::{entity_change, EntityChange, EntityChanges};
 use substreams_solana::pb::sf::solana::r#type::v1::Block;
-use utils::string_to_bigint;
+use utils::{get_transfer_amount, string_to_bigint};
 
 #[substreams::handlers::map]
 fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
@@ -39,7 +39,12 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
     let mut data: Vec<Event> = Vec::new();
 
     for confirmed_txn in block.transactions() {
-        for instruction in confirmed_txn.walk_instructions() {
+        let all_instructions = confirmed_txn
+            .walk_instructions()
+            .into_iter()
+            .collect::<Vec<_>>();
+
+        for instruction in &all_instructions {
             if instruction.program_id() != constants::ORCA_WHIRLPOOL {
                 continue;
             }
@@ -77,10 +82,28 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                         data,
                         input_accounts,
                     } => {
+                        let transfer_token_a_instruction = all_instructions.iter().find(|iv| {
+                            iv.accounts().eq(&vec![
+                                &input_accounts.token_owner_account_a,
+                                &input_accounts.token_vault_a,
+                                &input_accounts.position_authority,
+                            ])
+                        });
+
+                        let transfer_token_b_instruction = all_instructions.iter().find(|iv| {
+                            iv.accounts().eq(&vec![
+                                &input_accounts.token_owner_account_b,
+                                &input_accounts.token_vault_b,
+                                &input_accounts.position_authority,
+                            ])
+                        });
+
                         instruction_data = Some(IncreaseLiquidityType(IncreaseLiquidity {
                             instruction: Some(IncreaseLiquidityInstruction {
                                 liquidity_amount: data.liquidity_amount.to_string(),
+                                amount_a: get_transfer_amount(transfer_token_a_instruction),
                                 token_max_a: data.token_max_a,
+                                amount_b: get_transfer_amount(transfer_token_b_instruction),
                                 token_max_b: data.token_max_b,
                             }),
                             accounts: Some(IncreaseLiquidityInstructionAccounts {
@@ -108,10 +131,28 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                         data,
                         input_accounts,
                     } => {
+                        let transfer_token_a_instruction = all_instructions.iter().find(|iv| {
+                            iv.accounts().eq(&vec![
+                                &input_accounts.token_vault_a,
+                                &input_accounts.token_owner_account_a,
+                                &input_accounts.whirlpool,
+                            ])
+                        });
+
+                        let transfer_token_b_instruction = all_instructions.iter().find(|iv| {
+                            iv.accounts().eq(&vec![
+                                &input_accounts.token_vault_b,
+                                &input_accounts.token_owner_account_b,
+                                &input_accounts.whirlpool,
+                            ])
+                        });
+
                         instruction_data = Some(DecreaseLiquidityType(DecreaseLiquidity {
                             instruction: Some(DecreaseLiquidityInstruction {
                                 liquidity_amount: data.liquidity_amount.to_string(),
+                                amount_a: get_transfer_amount(transfer_token_a_instruction),
                                 token_min_a: data.token_min_a,
+                                amount_b: get_transfer_amount(transfer_token_b_instruction),
                                 token_min_b: data.token_min_b,
                             }),
                             accounts: Some(DecreaseLiquidityInstructionAccounts {
@@ -139,9 +180,84 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                         data,
                         input_accounts,
                     } => {
+                        let transfer_a_one_instr_addresses;
+                        let transfer_b_one_instr_addresses;
+                        let transfer_a_two_instr_addresses;
+                        let transfer_b_two_instr_addresses;
+
+                        if data.a_to_b_one {
+                            transfer_a_one_instr_addresses = vec![
+                                &input_accounts.token_owner_account_one_a,
+                                &input_accounts.token_vault_one_a,
+                                &input_accounts.token_authority,
+                            ];
+
+                            transfer_b_one_instr_addresses = vec![
+                                &input_accounts.token_vault_one_b,
+                                &input_accounts.token_owner_account_one_b,
+                                &input_accounts.whirlpool_one,
+                            ];
+                        } else {
+                            transfer_a_one_instr_addresses = vec![
+                                &input_accounts.token_vault_one_a,
+                                &input_accounts.token_owner_account_one_a,
+                                &input_accounts.whirlpool_one,
+                            ];
+
+                            transfer_b_one_instr_addresses = vec![
+                                &input_accounts.token_owner_account_one_b,
+                                &input_accounts.token_vault_one_b,
+                                &input_accounts.token_authority,
+                            ];
+                        }
+
+                        if data.a_to_b_two {
+                            transfer_a_two_instr_addresses = vec![
+                                &input_accounts.token_owner_account_two_a,
+                                &input_accounts.token_vault_two_a,
+                                &input_accounts.token_authority,
+                            ];
+
+                            transfer_b_two_instr_addresses = vec![
+                                &input_accounts.token_vault_two_b,
+                                &input_accounts.token_owner_account_two_b,
+                                &input_accounts.whirlpool_two,
+                            ];
+                        } else {
+                            transfer_a_two_instr_addresses = vec![
+                                &input_accounts.token_vault_two_a,
+                                &input_accounts.token_owner_account_two_a,
+                                &input_accounts.whirlpool_two,
+                            ];
+
+                            transfer_b_two_instr_addresses = vec![
+                                &input_accounts.token_owner_account_two_b,
+                                &input_accounts.token_vault_two_b,
+                                &input_accounts.token_authority,
+                            ];
+                        }
+
+                        let transfer_token_a_one_instruction = all_instructions
+                            .iter()
+                            .find(|iv| iv.accounts().eq(&transfer_a_one_instr_addresses));
+                        let transfer_token_b_one_instruction = all_instructions
+                            .iter()
+                            .find(|iv| iv.accounts().eq(&transfer_b_one_instr_addresses));
+
+                        let transfer_token_a_two_instruction = all_instructions
+                            .iter()
+                            .find(|iv| iv.accounts().eq(&transfer_a_two_instr_addresses));
+                        let transfer_token_b_two_instruction = all_instructions
+                            .iter()
+                            .find(|iv| iv.accounts().eq(&transfer_b_two_instr_addresses));
+
                         instruction_data = Some(TwoHopSwapType(TwoHopSwap {
                             instruction: Some(TwoHopSwapInstruction {
                                 amount: data.amount,
+                                amount_a_one: get_transfer_amount(transfer_token_a_one_instruction),
+                                amount_b_one: get_transfer_amount(transfer_token_b_one_instruction),
+                                amount_a_two: get_transfer_amount(transfer_token_a_two_instruction),
+                                amount_b_two: get_transfer_amount(transfer_token_b_two_instruction),
                                 other_amount_threshold: data.other_amount_threshold,
                                 amount_specified_is_input: data.amount_specified_is_input,
                                 a_to_b_one: data.a_to_b_one,
@@ -185,12 +301,51 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                         data,
                         input_accounts,
                     } => {
+                        let transfer_a_instr_addresses;
+                        let transfer_b_instr_addresses;
+
+                        if data.a_to_b {
+                            transfer_a_instr_addresses = vec![
+                                &input_accounts.token_owner_account_a,
+                                &input_accounts.token_vault_a,
+                                &input_accounts.token_authority,
+                            ];
+
+                            transfer_b_instr_addresses = vec![
+                                &input_accounts.token_vault_b,
+                                &input_accounts.token_owner_account_b,
+                                &input_accounts.whirlpool,
+                            ];
+                        } else {
+                            transfer_a_instr_addresses = vec![
+                                &input_accounts.token_vault_a,
+                                &input_accounts.token_owner_account_a,
+                                &input_accounts.whirlpool,
+                            ];
+
+                            transfer_b_instr_addresses = vec![
+                                &input_accounts.token_owner_account_b,
+                                &input_accounts.token_vault_b,
+                                &input_accounts.token_authority,
+                            ];
+                        }
+
+                        let transfer_token_a_instruction = all_instructions
+                            .iter()
+                            .find(|iv| iv.accounts().eq(&transfer_a_instr_addresses));
+
+                        let transfer_token_b_instruction = all_instructions
+                            .iter()
+                            .find(|iv| iv.accounts().eq(&transfer_b_instr_addresses));
+
                         instruction_data = Some(SwapType(Swap {
                             instruction: Some(SwapInstruction {
                                 amount: data.amount,
                                 other_amount_threshold: data.other_amount_threshold,
                                 sqrt_price_limit: data.sqrt_price_limit.to_string(),
                                 amount_specified_is_input: data.amount_specified_is_input,
+                                amount_a: get_transfer_amount(transfer_token_a_instruction),
+                                amount_b: get_transfer_amount(transfer_token_b_instruction),
                                 a_to_b: data.a_to_b,
                             }),
                             accounts: Some(SwapInstructionAccounts {

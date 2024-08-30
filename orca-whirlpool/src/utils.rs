@@ -1,7 +1,11 @@
 use sha2::{Digest, Sha256};
-use substreams_solana::pb::sf::solana::r#type::v1::{
-    ConfirmedTransaction, Message, Transaction, TransactionStatusMeta,
+use substreams_solana::{
+    block_view::InstructionView,
+    pb::sf::solana::r#type::v1::{
+        ConfirmedTransaction, Message, Transaction, TransactionStatusMeta,
+    },
 };
+use substreams_solana_program_instructions::token_instruction_2022::TokenInstruction;
 
 pub fn _txn_pre_checks(
     confirmed_txn: &ConfirmedTransaction,
@@ -41,4 +45,18 @@ pub fn _idl_discriminator(inst_name: &str) -> [u8; 8] {
 pub fn string_to_bigint(str: String) -> substreams::scalar::BigInt {
     str.parse::<substreams::scalar::BigInt>()
         .expect("failed to parse str")
+}
+
+pub fn get_transfer_amount(instruction: Option<&InstructionView>) -> Option<u64> {
+    if instruction.is_none() {
+        return None;
+    }
+
+    let data = instruction.unwrap().data();
+
+    match TokenInstruction::unpack(data).unwrap() {
+        TokenInstruction::Transfer { amount } => return Some(amount),
+
+        _ => return None,
+    }
 }

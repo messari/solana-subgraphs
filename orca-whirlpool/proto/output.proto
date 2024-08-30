@@ -28,10 +28,12 @@ message Swap {
 
   message SwapInstruction {
       uint64 amount = 1;
-      uint64 other_amount_threshold = 2;
-      string sqrt_price_limit = 3;
-      bool amount_specified_is_input = 4;
-      bool a_to_b = 5;
+      optional uint64 amount_a = 2;
+      optional uint64 amount_b = 3;
+      uint64 other_amount_threshold = 4;
+      string sqrt_price_limit = 5;
+      bool amount_specified_is_input = 6;
+      bool a_to_b = 7;
   }
 
   message SwapInstructionAccounts {
@@ -80,8 +82,10 @@ message IncreaseLiquidity {
 
   message IncreaseLiquidityInstruction {
       string liquidity_amount = 1;
-      uint64 token_max_a = 2;
-      uint64 token_max_b = 3;
+      uint64 token_max_a = 3;
+      optional uint64 amount_a = 2;
+      uint64 token_max_b = 5;
+      optional uint64 amount_b = 4;
   }
 
   message IncreaseLiquidityInstructionAccounts {
@@ -106,7 +110,9 @@ message DecreaseLiquidity {
   message DecreaseLiquidityInstruction {
       string liquidity_amount = 1;
       uint64 token_min_a = 2;
-      uint64 token_min_b = 3;
+      optional uint64 amount_a = 3;
+      uint64 token_min_b = 4;
+      optional uint64 amount_b = 5;
   }
 
   message DecreaseLiquidityInstructionAccounts {
@@ -130,12 +136,18 @@ message TwoHopSwap {
 
   message TwoHopSwapInstruction {
     uint64 amount = 1;
-    uint64 other_amount_threshold = 2;
-    bool amount_specified_is_input = 3;
-    bool a_to_b_one = 4;
-    bool a_to_b_two = 5;
-    string sqrt_price_limit_one = 6;
-    string sqrt_price_limit_two = 7;
+    optional uint64 amount_a_one = 2;
+    optional uint64 amount_b_one = 3;
+    
+    optional uint64 amount_a_two = 4;
+    optional uint64 amount_b_two = 5;
+
+    uint64 other_amount_threshold = 6;
+    bool amount_specified_is_input = 7;
+    bool a_to_b_one = 8;
+    bool a_to_b_two = 9;
+    string sqrt_price_limit_one = 10;
+    string sqrt_price_limit_two = 11;
   }
 
   message TwoHopSwapInstructionAccounts {
