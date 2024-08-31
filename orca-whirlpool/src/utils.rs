@@ -42,12 +42,7 @@ pub fn _idl_discriminator(inst_name: &str) -> [u8; 8] {
     sighash
 }
 
-pub fn string_to_bigint(str: String) -> substreams::scalar::BigInt {
-    str.parse::<substreams::scalar::BigInt>()
-        .expect("failed to parse str")
-}
-
-pub fn get_transfer_amount(instruction: Option<&InstructionView>) -> Option<u64> {
+pub fn get_transfer_amount(instruction: Option<&InstructionView>) -> Option<String> {
     if instruction.is_none() {
         return None;
     }
@@ -55,7 +50,7 @@ pub fn get_transfer_amount(instruction: Option<&InstructionView>) -> Option<u64>
     let data = instruction.unwrap().data();
 
     match TokenInstruction::unpack(data).unwrap() {
-        TokenInstruction::Transfer { amount } => return Some(amount),
+        TokenInstruction::Transfer { amount } => return Some(amount.to_string()),
 
         _ => return None,
     }

@@ -93,10 +93,12 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                         instruction_data = Some(IncreaseLiquidityType(IncreaseLiquidity {
                             instruction: Some(IncreaseLiquidityInstruction {
                                 liquidity_amount: data.liquidity_amount.to_string(),
+
+                                token_max_a: data.token_max_a.to_string(),
                                 amount_a: get_transfer_amount(transfer_token_a_instruction),
-                                token_max_a: data.token_max_a,
+
+                                token_max_b: data.token_max_b.to_string(),
                                 amount_b: get_transfer_amount(transfer_token_b_instruction),
-                                token_max_b: data.token_max_b,
                             }),
                             accounts: Some(IncreaseLiquidityInstructionAccounts {
                                 whirlpool: input_accounts.whirlpool.to_string(),
@@ -142,10 +144,12 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                         instruction_data = Some(DecreaseLiquidityType(DecreaseLiquidity {
                             instruction: Some(DecreaseLiquidityInstruction {
                                 liquidity_amount: data.liquidity_amount.to_string(),
+
+                                token_min_a: data.token_min_a.to_string(),
                                 amount_a: get_transfer_amount(transfer_token_a_instruction),
-                                token_min_a: data.token_min_a,
+
+                                token_min_b: data.token_min_b.to_string(),
                                 amount_b: get_transfer_amount(transfer_token_b_instruction),
-                                token_min_b: data.token_min_b,
                             }),
                             accounts: Some(DecreaseLiquidityInstructionAccounts {
                                 whirlpool: input_accounts.whirlpool.to_string(),
@@ -245,15 +249,20 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
 
                         instruction_data = Some(TwoHopSwapType(TwoHopSwap {
                             instruction: Some(TwoHopSwapInstruction {
-                                amount: data.amount,
+                                amount: data.amount.to_string(),
+
                                 amount_a_one: get_transfer_amount(transfer_token_a_one_instruction),
                                 amount_b_one: get_transfer_amount(transfer_token_b_one_instruction),
+
                                 amount_a_two: get_transfer_amount(transfer_token_a_two_instruction),
                                 amount_b_two: get_transfer_amount(transfer_token_b_two_instruction),
-                                other_amount_threshold: data.other_amount_threshold,
+
+                                other_amount_threshold: data.other_amount_threshold.to_string(),
+
                                 amount_specified_is_input: data.amount_specified_is_input,
                                 a_to_b_one: data.a_to_b_one,
                                 a_to_b_two: data.a_to_b_two,
+
                                 sqrt_price_limit_one: data.sqrt_price_limit_one.to_string(),
                                 sqrt_price_limit_two: data.sqrt_price_limit_two.to_string(),
                             }),
@@ -332,12 +341,15 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
 
                         instruction_data = Some(SwapType(Swap {
                             instruction: Some(SwapInstruction {
-                                amount: data.amount,
-                                other_amount_threshold: data.other_amount_threshold,
-                                sqrt_price_limit: data.sqrt_price_limit.to_string(),
-                                amount_specified_is_input: data.amount_specified_is_input,
+                                amount: data.amount.to_string(),
+
                                 amount_a: get_transfer_amount(transfer_token_a_instruction),
                                 amount_b: get_transfer_amount(transfer_token_b_instruction),
+
+                                other_amount_threshold: data.other_amount_threshold.to_string(),
+                                sqrt_price_limit: data.sqrt_price_limit.to_string(),
+
+                                amount_specified_is_input: data.amount_specified_is_input,
                                 a_to_b: data.a_to_b,
                             }),
                             accounts: Some(SwapInstructionAccounts {

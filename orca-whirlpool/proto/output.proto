@@ -2,6 +2,67 @@ syntax = "proto3";
 
 package messari.orca_whirlpool.v1;
 
+message Pools {
+  repeated Pool data = 1;
+}
+
+message Pool {
+  string address = 1;
+
+  string token_mint_a = 2;
+  string token_vault_a = 3;
+  
+  string token_mint_b = 4;
+  string token_vault_b = 5;
+
+  int64 created_timestamp = 6;
+  uint64 created_block_number = 7;
+}
+
+message Deposits {
+  repeated Deposits data = 1;
+}
+
+message Deposit {
+  string id = 1;
+
+  string amount_a = 2;
+  string amount_b = 3;
+
+  string output_amount = 4;
+
+  string to = 5;
+  string from = 6;
+
+  uint64 slot = 100;
+  string txn_id = 101;
+  uint64 block_height = 102;
+  int64 block_timestamp = 103;
+  string block_hash = 104;
+}
+
+message Withdraws {
+  repeated Withdraws data = 1;
+}
+
+message Withdraw {
+  string id = 1;
+
+  string amount_a = 2;
+  string amount_b = 3;
+
+  string output_amount = 4;
+  
+  string to = 5;
+  string from = 6;
+
+  uint64 slot = 100;
+  string txn_id = 101;
+  uint64 block_height = 102;
+  int64 block_timestamp = 103;
+  string block_hash = 104;
+}
+
 message Events {
   repeated Event data = 1;
 }
@@ -20,35 +81,6 @@ message Event {
   uint64 block_height = 102;
   int64 block_timestamp = 103;
   string block_hash = 104;
-}
-
-message Swap {
-  SwapInstruction instruction = 1;
-  SwapInstructionAccounts accounts = 2;
-
-  message SwapInstruction {
-      uint64 amount = 1;
-      optional uint64 amount_a = 2;
-      optional uint64 amount_b = 3;
-      uint64 other_amount_threshold = 4;
-      string sqrt_price_limit = 5;
-      bool amount_specified_is_input = 6;
-      bool a_to_b = 7;
-  }
-
-  message SwapInstructionAccounts {
-    string token_program = 1;
-    string token_authority = 2;
-    string whirlpool = 3;
-    string token_owner_account_a = 4;
-    string token_vault_a = 5;
-    string token_owner_account_b = 6;
-    string token_vault_b = 7;
-    string tick_array_0 = 8;
-    string tick_array_1 = 9;
-    string tick_array_2 = 10;
-    string oracle = 11;
-  }
 }
 
 message InitializePool {
@@ -76,16 +108,50 @@ message InitializePool {
   }
 }
 
+message Swap {
+  SwapInstruction instruction = 1;
+  SwapInstructionAccounts accounts = 2;
+
+  message SwapInstruction {
+    string amount = 1;
+    
+    optional string amount_a = 2;
+    optional string amount_b = 3;
+    
+    string other_amount_threshold = 4;
+    string sqrt_price_limit = 5;
+    
+    bool amount_specified_is_input = 6;
+    bool a_to_b = 7;
+  }
+
+  message SwapInstructionAccounts {
+    string token_program = 1;
+    string token_authority = 2;
+    string whirlpool = 3;
+    string token_owner_account_a = 4;
+    string token_vault_a = 5;
+    string token_owner_account_b = 6;
+    string token_vault_b = 7;
+    string tick_array_0 = 8;
+    string tick_array_1 = 9;
+    string tick_array_2 = 10;
+    string oracle = 11;
+  }
+}
+
 message IncreaseLiquidity {
   IncreaseLiquidityInstruction instruction = 1;
   IncreaseLiquidityInstructionAccounts accounts = 2;
 
   message IncreaseLiquidityInstruction {
       string liquidity_amount = 1;
-      uint64 token_max_a = 3;
-      optional uint64 amount_a = 2;
-      uint64 token_max_b = 5;
-      optional uint64 amount_b = 4;
+      
+      string token_max_a = 3;
+      optional string amount_a = 2;
+      
+      string token_max_b = 5;
+      optional string amount_b = 4;
   }
 
   message IncreaseLiquidityInstructionAccounts {
@@ -109,10 +175,12 @@ message DecreaseLiquidity {
 
   message DecreaseLiquidityInstruction {
       string liquidity_amount = 1;
-      uint64 token_min_a = 2;
-      optional uint64 amount_a = 3;
-      uint64 token_min_b = 4;
-      optional uint64 amount_b = 5;
+      
+      string token_min_a = 2;
+      optional string amount_a = 3;
+      
+      string token_min_b = 4;
+      optional string amount_b = 5;
   }
 
   message DecreaseLiquidityInstructionAccounts {
@@ -135,17 +203,20 @@ message TwoHopSwap {
   TwoHopSwapInstructionAccounts accounts = 2;
 
   message TwoHopSwapInstruction {
-    uint64 amount = 1;
-    optional uint64 amount_a_one = 2;
-    optional uint64 amount_b_one = 3;
+    string amount = 1;
     
-    optional uint64 amount_a_two = 4;
-    optional uint64 amount_b_two = 5;
+    optional string amount_a_one = 2;
+    optional string amount_b_one = 3;
+    
+    optional string amount_a_two = 4;
+    optional string amount_b_two = 5;
 
-    uint64 other_amount_threshold = 6;
+    string other_amount_threshold = 6;
+    
     bool amount_specified_is_input = 7;
     bool a_to_b_one = 8;
     bool a_to_b_two = 9;
+    
     string sqrt_price_limit_one = 10;
     string sqrt_price_limit_two = 11;
   }
