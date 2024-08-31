@@ -63,6 +63,29 @@ message Withdraw {
   string block_hash = 104;
 }
 
+message Swaps {
+  repeated Swap data = 1;
+}
+
+message Swap {
+  string id = 1;
+
+  string amount_in = 2;
+  string amount_out = 3;
+  
+  string token_in = 4;
+  string token_out = 5;
+
+  string to = 6;
+  string from = 7;
+
+  uint64 slot = 100;
+  string txn_id = 101;
+  uint64 block_height = 102;
+  int64 block_timestamp = 103;
+  string block_hash = 104;
+}
+
 message Events {
   repeated Event data = 1;
 }
@@ -73,7 +96,7 @@ message Event {
     IncreaseLiquidity increase_liquidity = 20;
     DecreaseLiquidity decrease_liquidity = 30;
     TwoHopSwap two_hop_swap = 40;
-    Swap swap = 50;
+    OrcaSwap swap = 50;
   }
 
   uint64 slot = 100;
@@ -105,38 +128,6 @@ message InitializePool {
     string token_program = 9;
     string system_program = 10;
     string rent = 11;
-  }
-}
-
-message Swap {
-  SwapInstruction instruction = 1;
-  SwapInstructionAccounts accounts = 2;
-
-  message SwapInstruction {
-    string amount = 1;
-    
-    optional string amount_a = 2;
-    optional string amount_b = 3;
-    
-    string other_amount_threshold = 4;
-    string sqrt_price_limit = 5;
-    
-    bool amount_specified_is_input = 6;
-    bool a_to_b = 7;
-  }
-
-  message SwapInstructionAccounts {
-    string token_program = 1;
-    string token_authority = 2;
-    string whirlpool = 3;
-    string token_owner_account_a = 4;
-    string token_vault_a = 5;
-    string token_owner_account_b = 6;
-    string token_vault_b = 7;
-    string tick_array_0 = 8;
-    string tick_array_1 = 9;
-    string tick_array_2 = 10;
-    string oracle = 11;
   }
 }
 
@@ -242,5 +233,37 @@ message TwoHopSwap {
     string tick_array_two2 = 18;
     string oracle_one = 19;
     string oracle_two = 20;
+  }
+}
+
+message OrcaSwap {
+  SwapInstruction instruction = 1;
+  SwapInstructionAccounts accounts = 2;
+
+  message SwapInstruction {
+    string amount = 1;
+    
+    optional string amount_a = 2;
+    optional string amount_b = 3;
+    
+    string other_amount_threshold = 4;
+    string sqrt_price_limit = 5;
+    
+    bool amount_specified_is_input = 6;
+    bool a_to_b = 7;
+  }
+
+  message SwapInstructionAccounts {
+    string token_program = 1;
+    string token_authority = 2;
+    string whirlpool = 3;
+    string token_owner_account_a = 4;
+    string token_vault_a = 5;
+    string token_owner_account_b = 6;
+    string token_vault_b = 7;
+    string tick_array_0 = 8;
+    string tick_array_1 = 9;
+    string tick_array_2 = 10;
+    string oracle = 11;
   }
 }

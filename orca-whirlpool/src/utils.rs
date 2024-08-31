@@ -42,16 +42,14 @@ pub fn _idl_discriminator(inst_name: &str) -> [u8; 8] {
     sighash
 }
 
+#[allow(deprecated)]
 pub fn get_transfer_amount(instruction: Option<&InstructionView>) -> Option<String> {
-    if instruction.is_none() {
-        return None;
-    }
+    instruction?;
 
     let data = instruction.unwrap().data();
 
     match TokenInstruction::unpack(data).unwrap() {
-        TokenInstruction::Transfer { amount } => return Some(amount.to_string()),
-
-        _ => return None,
+        TokenInstruction::Transfer { amount } => Some(amount.to_string()),
+        _ => None,
     }
 }

@@ -44,53 +44,53 @@ impl<'a> OrcaInstructions<'a> {
         let (tag, mut rest) = instruction_view.data().split_at(8);
 
         match tag {
-            x if x == &constants::DiscriminatorConstants::INITIALIZE_POOL => {
+            x if x == constants::DiscriminatorConstants::INITIALIZE_POOL => {
                 let data = InitializePoolInstruction::deserialize(&mut rest).ok()?;
                 let input_accounts =
                     InitializePoolInstructionAccounts::deserialize(instruction_view)?;
 
-                return Some(OrcaInstructions::InitializePool {
+                Some(OrcaInstructions::InitializePool {
                     data,
                     input_accounts,
-                });
+                })
             }
-            x if x == &constants::DiscriminatorConstants::INCREASE_LIQUIDITY => {
+            x if x == constants::DiscriminatorConstants::INCREASE_LIQUIDITY => {
                 let data = IncreaseLiquidityInstruction::deserialize(&mut rest).ok()?;
                 let input_accounts =
                     IncreaseLiquidityInstructionAccounts::deserialize(instruction_view)?;
 
-                return Some(OrcaInstructions::IncreaseLiquidity {
+                Some(OrcaInstructions::IncreaseLiquidity {
                     data,
                     input_accounts,
-                });
+                })
             }
-            x if x == &constants::DiscriminatorConstants::DECREASE_LIQUIDITY => {
+            x if x == constants::DiscriminatorConstants::DECREASE_LIQUIDITY => {
                 let data = DecreaseLiquidityInstruction::deserialize(&mut rest).ok()?;
                 let input_accounts =
                     DecreaseLiquidityInstructionAccounts::deserialize(instruction_view)?;
 
-                return Some(OrcaInstructions::DecreaseLiquidity {
+                Some(OrcaInstructions::DecreaseLiquidity {
                     data,
                     input_accounts,
-                });
+                })
             }
-            x if x == &constants::DiscriminatorConstants::TWO_HOP_SWAP => {
+            x if x == constants::DiscriminatorConstants::TWO_HOP_SWAP => {
                 let data = TwoHopSwapInstruction::deserialize(&mut rest).ok()?;
                 let input_accounts = TwoHopSwapInstructionAccounts::deserialize(instruction_view)?;
 
-                return Some(OrcaInstructions::TwoHopSwap {
+                Some(OrcaInstructions::TwoHopSwap {
                     data,
                     input_accounts,
-                });
+                })
             }
-            x if x == &constants::DiscriminatorConstants::SWAP => {
+            x if x == constants::DiscriminatorConstants::SWAP => {
                 let data = SwapInstruction::deserialize(&mut rest).ok()?;
                 let input_accounts = SwapInstructionAccounts::deserialize(instruction_view)?;
 
-                return Some(OrcaInstructions::Swap {
+                Some(OrcaInstructions::Swap {
                     data,
                     input_accounts,
-                });
+                })
             }
             _ => None,
         }

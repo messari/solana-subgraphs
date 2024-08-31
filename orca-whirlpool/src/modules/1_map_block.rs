@@ -13,12 +13,12 @@ use crate::pb::messari::orca_whirlpool::v1::increase_liquidity::{
 use crate::pb::messari::orca_whirlpool::v1::initialize_pool::{
     InitializePoolInstruction, InitializePoolInstructionAccounts,
 };
-use crate::pb::messari::orca_whirlpool::v1::swap::{SwapInstruction, SwapInstructionAccounts};
+use crate::pb::messari::orca_whirlpool::v1::orca_swap::{SwapInstruction, SwapInstructionAccounts};
 use crate::pb::messari::orca_whirlpool::v1::two_hop_swap::{
     TwoHopSwapInstruction, TwoHopSwapInstructionAccounts,
 };
 use crate::pb::messari::orca_whirlpool::v1::{
-    DecreaseLiquidity, Event, Events, IncreaseLiquidity, InitializePool, Swap, TwoHopSwap,
+    DecreaseLiquidity, Event, Events, IncreaseLiquidity, InitializePool, OrcaSwap, TwoHopSwap,
 };
 use crate::utils::get_transfer_amount;
 use substreams::skip_empty_output;
@@ -31,10 +31,7 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
     let mut data: Vec<Event> = Vec::new();
 
     for confirmed_txn in block.transactions() {
-        let all_instructions = confirmed_txn
-            .walk_instructions()
-            .into_iter()
-            .collect::<Vec<_>>();
+        let all_instructions = confirmed_txn.walk_instructions().collect::<Vec<_>>();
 
         for instruction in &all_instructions {
             if instruction.program_id() != constants::ORCA_WHIRLPOOL {
@@ -43,7 +40,7 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
 
             let mut instruction_data: Option<Type> = None;
 
-            if let Some(decoded_instruction) = OrcaInstructions::from(&instruction) {
+            if let Some(decoded_instruction) = OrcaInstructions::from(instruction) {
                 match decoded_instruction {
                     OrcaInstructions::InitializePool {
                         data,
@@ -339,7 +336,7 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
                             .iter()
                             .find(|iv| iv.accounts().eq(&transfer_b_instr_addresses));
 
-                        instruction_data = Some(SwapType(Swap {
+                        instruction_data = Some(SwapType(OrcaSwap {
                             instruction: Some(SwapInstruction {
                                 amount: data.amount.to_string(),
 
@@ -379,7 +376,7 @@ fn map_block(block: Block) -> Result<Events, substreams::errors::Error> {
             }
 
             data.push(Event {
-                slot: block.slot.clone(),
+                slot: block.slot,
                 txn_id: confirmed_txn.id().clone(),
                 block_height: block.block_height.clone().unwrap_or_default().block_height,
                 block_timestamp: block.block_time.clone().unwrap_or_default().timestamp,

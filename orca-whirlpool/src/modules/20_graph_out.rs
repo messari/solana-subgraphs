@@ -71,10 +71,10 @@ fn graph_out(events: Events) -> Result<EntityChanges, ()> {
                     )
                     .set(
                         "amount_specified_is_input",
-                        &instruction.amount_specified_is_input,
+                        instruction.amount_specified_is_input,
                     )
-                    .set("a_to_b_one", &instruction.a_to_b_one)
-                    .set("a_to_b_two", &instruction.a_to_b_two)
+                    .set("a_to_b_one", instruction.a_to_b_one)
+                    .set("a_to_b_two", instruction.a_to_b_two)
                     .set_bigint("sqrt_price_limit_one", &instruction.sqrt_price_limit_one)
                     .set_bigint("sqrt_price_limit_two", &instruction.sqrt_price_limit_two)
                     .set_bigint("slot", &event.slot.to_string())
@@ -96,9 +96,9 @@ fn graph_out(events: Events) -> Result<EntityChanges, ()> {
                     .set_bigint("sqrt_price_limit", &instruction.sqrt_price_limit)
                     .set(
                         "amount_specified_is_input",
-                        &instruction.amount_specified_is_input,
+                        instruction.amount_specified_is_input,
                     )
-                    .set("a_to_b", &instruction.a_to_b)
+                    .set("a_to_b", instruction.a_to_b)
                     .set_bigint("slot", &event.slot.to_string())
                     .set("txn_id", &event.txn_id)
                     .set_bigint("block_height", &event.block_height.to_string())

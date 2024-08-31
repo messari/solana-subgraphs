@@ -3,16 +3,16 @@ use substreams::store::StoreSetIfNotExists;
 use substreams::store::StoreSetIfNotExistsProto;
 
 use crate::key_store::StoreKey;
-use crate::pb::messari::orca_whirlpool::v1::{event, Events, Withdraw};
+use crate::pb::messari::orca_whirlpool::v1::{event, Deposit, Events};
 
 #[substreams::handlers::store]
-pub fn store_withdraws(raw_events: Events, store: StoreSetIfNotExistsProto<Withdraw>) {
+pub fn store_deposits(raw_events: Events, store: StoreSetIfNotExistsProto<Deposit>) {
     for event in raw_events.data {
-        if let event::Type::DecreaseLiquidity(decrease_liquidity_event) = event.r#type.unwrap() {
-            let instruction = decrease_liquidity_event.instruction.unwrap();
-            let accounts = decrease_liquidity_event.accounts.unwrap();
+        if let event::Type::IncreaseLiquidity(increase_liquidity_event) = event.r#type.unwrap() {
+            let instruction = increase_liquidity_event.instruction.unwrap();
+            let accounts = increase_liquidity_event.accounts.unwrap();
 
-            let pool_withdraw = Withdraw {
+            let pool_deposit = Deposit {
                 id: [event.txn_id.clone(), event.slot.to_string()].join("-"),
 
                 amount_a: instruction.amount_a.unwrap_or_default(),
@@ -32,8 +32,8 @@ pub fn store_withdraws(raw_events: Events, store: StoreSetIfNotExistsProto<Withd
 
             store.set_if_not_exists(
                 0,
-                StoreKey::Withdraw.get_unique_key(&pool_withdraw.id),
-                &pool_withdraw,
+                StoreKey::Deposit.get_unique_key(&pool_deposit.id),
+                &pool_deposit,
             );
         }
     }
