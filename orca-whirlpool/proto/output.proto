@@ -20,19 +20,22 @@ message Pool {
 }
 
 message Deposits {
-  repeated Deposits data = 1;
+  repeated Deposit data = 1;
 }
 
 message Deposit {
   string id = 1;
 
-  string amount_a = 2;
-  string amount_b = 3;
+  string token_a = 2;
+  string token_b = 3;
 
-  string output_amount = 4;
+  string amount_a = 4;
+  string amount_b = 5;
 
-  string to = 5;
-  string from = 6;
+  string output_amount = 6;
+
+  string to = 7;
+  string from = 8;
 
   uint64 slot = 100;
   string txn_id = 101;
@@ -42,19 +45,22 @@ message Deposit {
 }
 
 message Withdraws {
-  repeated Withdraws data = 1;
+  repeated Withdraw data = 1;
 }
 
 message Withdraw {
   string id = 1;
 
-  string amount_a = 2;
-  string amount_b = 3;
+  string token_a = 2;
+  string token_b = 3; 
 
-  string output_amount = 4;
+  string amount_a = 4;
+  string amount_b = 5;
+
+  string output_amount = 6;
   
-  string to = 5;
-  string from = 6;
+  string to = 7;
+  string from = 8;
 
   uint64 slot = 100;
   string txn_id = 101;
@@ -107,16 +113,16 @@ message Event {
 }
 
 message InitializePool {
-  InitializePoolInstruction instruction = 1;
-  InitializePoolInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message InitializePoolInstruction {
+  message Instruction {
     uint32 bumps = 1;
     uint32 tick_spacing = 2;
     string initial_sqrt_price = 3;
   }
 
-  message InitializePoolInstructionAccounts {
+  message Accounts {
     string whirlpools_config = 1;
     string token_mint_a = 2;
     string token_mint_b = 3;
@@ -132,10 +138,10 @@ message InitializePool {
 }
 
 message IncreaseLiquidity {
-  IncreaseLiquidityInstruction instruction = 1;
-  IncreaseLiquidityInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message IncreaseLiquidityInstruction {
+  message Instruction {
       string liquidity_amount = 1;
       
       string token_max_a = 3;
@@ -145,7 +151,7 @@ message IncreaseLiquidity {
       optional string amount_b = 4;
   }
 
-  message IncreaseLiquidityInstructionAccounts {
+  message Accounts {
     string whirlpool = 1;
     string token_program = 2;
     string position_authority = 3;
@@ -161,10 +167,10 @@ message IncreaseLiquidity {
 }
 
 message DecreaseLiquidity {
-  DecreaseLiquidityInstruction instruction = 1;
-  DecreaseLiquidityInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message DecreaseLiquidityInstruction {
+  message Instruction {
       string liquidity_amount = 1;
       
       string token_min_a = 2;
@@ -174,7 +180,7 @@ message DecreaseLiquidity {
       optional string amount_b = 5;
   }
 
-  message DecreaseLiquidityInstructionAccounts {
+  message Accounts {
     string whirlpool = 1;
     string token_program = 2;
     string position_authority = 3;
@@ -190,10 +196,10 @@ message DecreaseLiquidity {
 }
 
 message TwoHopSwap {
-  TwoHopSwapInstruction instruction = 1;
-  TwoHopSwapInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message TwoHopSwapInstruction {
+  message Instruction {
     string amount = 1;
     
     optional string amount_a_one = 2;
@@ -212,7 +218,7 @@ message TwoHopSwap {
     string sqrt_price_limit_two = 11;
   }
 
-  message TwoHopSwapInstructionAccounts {
+  message Accounts {
     string token_program = 1;
     string token_authority = 2;
     string whirlpool_one = 3;
@@ -237,10 +243,10 @@ message TwoHopSwap {
 }
 
 message OrcaSwap {
-  SwapInstruction instruction = 1;
-  SwapInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message SwapInstruction {
+  message Instruction {
     string amount = 1;
     
     optional string amount_a = 2;
@@ -253,7 +259,7 @@ message OrcaSwap {
     bool a_to_b = 7;
   }
 
-  message SwapInstructionAccounts {
+  message Accounts {
     string token_program = 1;
     string token_authority = 2;
     string whirlpool = 3;

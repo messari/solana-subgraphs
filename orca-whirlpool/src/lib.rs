@@ -1,4 +1,5 @@
 mod constants;
+mod db;
 mod instructions;
 mod key_store;
 mod modules;

@@ -1,3 +1,46 @@
+type Protocol @entity {
+  " PDA of the protocol "
+  id: ID!
+
+  " Number of cumulative unique users "
+  cumulativeUniqueUsers: BigInt!
+
+  " Total number of pools "
+  totalPoolCount: BigInt!
+}
+
+type Pool @entity {
+  " PDA of the pool "
+  id: ID!
+
+  " The protocol this pool belongs to "
+  protocol: Protocol!
+
+  " Tokens that need to be deposited to take a position in protocol. e.g. WETH and USDC to deposit into the WETH-USDC pool. Array to account for multi-asset pools like Curve and Balancer "
+  inputTokens: [String!]!
+
+  " Token that is minted to track ownership of position in protocol "
+  outputToken: String
+
+  " All trade volume occurred in a given day for a specific input token, in native amount. The ordering should be the same as the pool's `inputTokens` field. "
+  cumulativeVolumeByTokenAmount: [BigInt!]!
+
+  " Amount of token0 in the pool. "
+  token0Balance: BigInt!
+
+  " Amount of token1 in the pool. "
+  token1Balance: BigInt!
+
+  " Total supply of output token. Note that certain DEXes don't have an output token (e.g. Bancor) "
+  outputTokenSupply: BigInt
+
+  " Creation timestamp "
+  createdTimestamp: BigInt!
+
+  " Creation block number "
+  createdBlockNumber: BigInt!
+}
+
 type InitializePool @entity {
   id: ID!
 

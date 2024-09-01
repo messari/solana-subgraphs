@@ -1,13 +1,16 @@
 use substreams::scalar::BigInt;
-use substreams::store::StoreNew;
-use substreams::store::StoreSetIfNotExists;
-use substreams::store::StoreSetIfNotExistsBigInt;
+use substreams::skip_empty_output;
+use substreams::store::{StoreNew, StoreSetIfNotExists, StoreSetIfNotExistsBigInt};
 
 use crate::key_store::StoreKey;
 use crate::pb::messari::orca_whirlpool::v1::{event, Events};
 
 #[substreams::handlers::store]
 pub fn store_unique_users(raw_events: Events, store: StoreSetIfNotExistsBigInt) {
+    skip_empty_output();
+
+    let bigint1 = BigInt::one();
+
     for event in raw_events.data {
         match event.r#type.clone().unwrap() {
             event::Type::IncreaseLiquidity(increase_liquidity_event) => {
@@ -16,7 +19,7 @@ pub fn store_unique_users(raw_events: Events, store: StoreSetIfNotExistsBigInt) 
                 store.set_if_not_exists(
                     0,
                     StoreKey::User.get_unique_key(&accounts.position_authority),
-                    &BigInt::one(),
+                    &bigint1,
                 );
             }
 
@@ -26,7 +29,7 @@ pub fn store_unique_users(raw_events: Events, store: StoreSetIfNotExistsBigInt) 
                 store.set_if_not_exists(
                     0,
                     StoreKey::User.get_unique_key(&accounts.position_authority),
-                    &BigInt::one(),
+                    &bigint1,
                 );
             }
 
@@ -36,7 +39,7 @@ pub fn store_unique_users(raw_events: Events, store: StoreSetIfNotExistsBigInt) 
                 store.set_if_not_exists(
                     0,
                     StoreKey::User.get_unique_key(&accounts.token_authority),
-                    &BigInt::one(),
+                    &bigint1,
                 );
             }
 
@@ -46,7 +49,7 @@ pub fn store_unique_users(raw_events: Events, store: StoreSetIfNotExistsBigInt) 
                 store.set_if_not_exists(
                     0,
                     StoreKey::User.get_unique_key(&accounts.token_authority),
-                    &BigInt::one(),
+                    &bigint1,
                 );
             }
 

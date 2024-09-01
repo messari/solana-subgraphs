@@ -31,12 +31,29 @@ modules:
     output:
       type: proto:messari.orca_whirlpool.v1.Events
 
+  - name: map_pools
+    kind: map
+    initialBlock: 124152351
+    inputs:
+      - map: map_block
+    output:
+      type: proto:messari.orca_whirlpool.v1.Pools
+
   - name: store_pools
     kind: store
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Pool
     inputs:
+      - map: map_pools
+
+  - name: map_deposits
+    kind: map
+    initialBlock: 124152351
+    inputs:
       - map: map_block
+      - store: store_pools
+    output:
+      type: proto:messari.orca_whirlpool.v1.Deposits
 
   - name: store_deposits
     kind: store
@@ -44,21 +61,38 @@ modules:
     valueType: proto:messari.orca_whirlpool.v1.Deposit
     inputs:
       - map: map_block
-  
+
+  - name: map_withdraws
+    kind: map
+    initialBlock: 124152351
+    inputs:
+      - map: map_block
+      - store: store_pools
+    output:
+      type: proto:messari.orca_whirlpool.v1.Withdraws
+
   - name: store_withdraws
     kind: store
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Withdraw
     inputs:
       - map: map_block
+  
+  - name: map_swaps
+    kind: map
+    initialBlock: 124152351
+    inputs:
+      - map: map_block
+      - store: store_pools
+    output:
+      type: proto:messari.orca_whirlpool.v1.Swaps
 
   - name: store_swaps
     kind: store
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Swap
     inputs:
-      - map: map_block
-      - store: store_pools
+      - map: map_swaps
 
   - name: store_unique_users
     kind: store
@@ -70,15 +104,51 @@ modules:
   - name: store_cumulative_users
     kind: store
     updatePolicy: add
-    valueType: bigint
+    valueType: int64
     inputs:
       - store: store_unique_users
         mode: deltas
 
+  - name: store_total_pool_count
+    kind: store
+    updatePolicy: add
+    valueType: int64
+    inputs:
+      - store: store_pools
+        mode: deltas
+
+  - name: store_pool_balances
+    kind: store
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - map: map_deposits
+      - map: map_withdraws
+      - map: map_swaps
+
+  - name: store_pool_liquidity
+    kind: store
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - map: map_deposits
+      - map: map_withdraws
+
   - name: graph_out
     kind: map
+    initialBlock: 124152351
     inputs:
-      - map: map_block
+      - source: sf.substreams.v1.Clock
+      - map: map_pools
+      - store: store_pools
+      - store: store_cumulative_users
+        mode: deltas
+      - store: store_total_pool_count
+        mode: deltas
+      - store: store_pool_balances
+        mode: deltas
+      - store: store_pool_liquidity
+        mode: deltas
     output:
       type: proto:sf.substreams.sink.entity.v1.EntityChanges
 

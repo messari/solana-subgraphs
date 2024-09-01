@@ -17,8 +17,8 @@ pub struct IncreaseLiquidityInstruction {
 
 #[derive(AccountsDeserialize, Debug)]
 pub struct IncreaseLiquidityInstructionAccounts<'a> {
-    pub token_program: Address<'a>,
     pub whirlpool: Address<'a>,
+    pub token_program: Address<'a>,
     pub position_authority: Address<'a>,
     pub position: Address<'a>,
     pub position_token_account: Address<'a>,
