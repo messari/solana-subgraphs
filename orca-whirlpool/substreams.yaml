@@ -41,6 +41,7 @@ modules:
 
   - name: store_pools
     kind: store
+    initialBlock: 124152351
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Pool
     inputs:
@@ -57,6 +58,7 @@ modules:
 
   - name: store_deposits
     kind: store
+    initialBlock: 124152351
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Deposit
     inputs:
@@ -73,6 +75,7 @@ modules:
 
   - name: store_withdraws
     kind: store
+    initialBlock: 124152351
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Withdraw
     inputs:
@@ -89,6 +92,7 @@ modules:
 
   - name: store_swaps
     kind: store
+    initialBlock: 124152351
     updatePolicy: set_if_not_exists
     valueType: proto:messari.orca_whirlpool.v1.Swap
     inputs:
@@ -149,6 +153,9 @@ modules:
         mode: deltas
       - store: store_pool_liquidity
         mode: deltas
+      - map: map_deposits
+      - map: map_withdraws
+      - map: map_swaps
     output:
       type: proto:sf.substreams.sink.entity.v1.EntityChanges
 
