@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Clone)]
 pub enum StoreKey {
     Pool,
@@ -9,6 +11,14 @@ pub enum StoreKey {
     PoolLiquidity,
     TotalPoolCount,
     CumulativeUsers,
+    TxnCount,
+    SwapCount,
+    ActiveUsers,
+    DepositCount,
+    WithdrawCount,
+    DailyVolumeByTokenAmount,
+    PoolDailySnapshot(i64, Option<Box<StoreKey>>),
+    UsageMetricsDailySnapshot(i64, Option<Box<StoreKey>>),
 }
 
 impl StoreKey {
@@ -20,17 +30,46 @@ impl StoreKey {
         format!("{}:{}:{}", self.unique_id(), key1, key2)
     }
 
+    pub fn get_snapshot_key(&self, key: Option<&str>) -> String {
+        format!("{}:{}", self.unique_id(), key.unwrap_or(""))
+    }
+
     pub fn unique_id(&self) -> String {
         match self {
-            StoreKey::Pool => "POOL".to_string(),
-            StoreKey::Swap => "SWAP".to_string(),
-            StoreKey::User => "USER".to_string(),
-            StoreKey::Deposit => "DEPOSIT".to_string(),
-            StoreKey::Withdraw => "WITHDRAW".to_string(),
-            StoreKey::PoolBalance => "POOL_BALANCE".to_string(),
-            StoreKey::PoolLiquidity => "POOL_LIQUIDITY".to_string(),
-            StoreKey::TotalPoolCount => "TOTAL_POOL_COUNT".to_string(),
-            StoreKey::CumulativeUsers => "CUMULATIVE_USERS".to_string(),
+            StoreKey::UsageMetricsDailySnapshot(day_id, field) => {
+                let field_id = field.as_ref().map(|f| f.unique_id()).unwrap_or_default();
+                format!("UsageMetricsDailySnapshot:{day_id}:{field_id}")
+            }
+            StoreKey::PoolDailySnapshot(day_id, field) => {
+                let field_id = field.as_ref().map(|f| f.unique_id()).unwrap_or_default();
+                format!("PoolDailySnapshot:{day_id}:{field_id}")
+            }
+            _ => format!("{}", self),
         }
+    }
+}
+
+impl fmt::Display for StoreKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            StoreKey::Pool => "POOL",
+            StoreKey::Swap => "SWAP",
+            StoreKey::User => "USER",
+            StoreKey::Deposit => "DEPOSIT",
+            StoreKey::Withdraw => "WITHDRAW",
+            StoreKey::PoolBalance => "POOL_BALANCE",
+            StoreKey::PoolLiquidity => "POOL_LIQUIDITY",
+            StoreKey::TotalPoolCount => "TOTAL_POOL_COUNT",
+            StoreKey::CumulativeUsers => "CUMULATIVE_USERS",
+            StoreKey::TxnCount => "TXN_COUNT",
+            StoreKey::SwapCount => "SWAP_COUNT",
+            StoreKey::ActiveUsers => "ACTIVE_USERS",
+            StoreKey::DepositCount => "DEPOSIT_COUNT",
+            StoreKey::WithdrawCount => "WITHDRAW_COUNT",
+            StoreKey::DailyVolumeByTokenAmount => "DAILY_VOLUME_BY_TOKEN_AMOUNT",
+            StoreKey::UsageMetricsDailySnapshot(_, _) => "USAGE_METRICS_DAILY_SNAPSHOT",
+            StoreKey::PoolDailySnapshot(_, _) => "POOL_DAILY_SNAPSHOT",
+        };
+        write!(f, "{}", s)
     }
 }
