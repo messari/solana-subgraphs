@@ -153,9 +153,9 @@ modules:
         mode: deltas
       - store: store_pool_liquidity
         mode: deltas
-      - map: map_deposits
-      - map: map_withdraws
-      - map: map_swaps
+      # - map: map_deposits
+      # - map: map_withdraws
+      # - map: map_swaps
     output:
       type: proto:sf.substreams.sink.entity.v1.EntityChanges
 

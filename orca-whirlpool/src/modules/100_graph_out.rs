@@ -1,4 +1,4 @@
-use crate::pb::messari::orca_whirlpool::v1::{Deposits, Pool, Pools, Swaps, Withdraws};
+use crate::pb::messari::orca_whirlpool::v1::{Pool, Pools};
 use crate::{constants, db};
 
 use substreams::pb::substreams::Clock;
@@ -16,9 +16,9 @@ fn graph_out(
     total_pool_count_delta: Deltas<DeltaInt64>,
     pool_balances_delta: Deltas<DeltaBigInt>,
     pool_liquidity_delta: Deltas<DeltaBigInt>,
-    map_deposits: Deposits,
-    map_withdraws: Withdraws,
-    map_swaps: Swaps,
+    // map_deposits: Deposits,
+    // map_withdraws: Withdraws,
+    // map_swaps: Swaps,
 ) -> Result<EntityChanges, ()> {
     skip_empty_output();
 
@@ -42,9 +42,9 @@ fn graph_out(
         &protocol_id,
     );
 
-    db::handle_deposit_entity(&mut tables, map_deposits, &protocol_id);
-    db::handle_withdraw_entity(&mut tables, map_withdraws, &protocol_id);
-    db::handle_swap_entity(&mut tables, map_swaps, &protocol_id);
+    // db::handle_deposit_entity(&mut tables, map_deposits, &protocol_id);
+    // db::handle_withdraw_entity(&mut tables, map_withdraws, &protocol_id);
+    // db::handle_swap_entity(&mut tables, map_swaps, &protocol_id);
 
     Ok(tables.to_entity_changes())
 }
