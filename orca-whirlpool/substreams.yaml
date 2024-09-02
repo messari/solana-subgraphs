@@ -103,6 +103,7 @@ modules:
     updatePolicy: set_if_not_exists
     valueType: bigint
     inputs:
+      - source: sf.substreams.v1.Clock
       - map: map_block
 
   - name: store_cumulative_users
@@ -110,6 +111,7 @@ modules:
     updatePolicy: add
     valueType: int64
     inputs:
+      - source: sf.substreams.v1.Clock
       - store: store_unique_users
         mode: deltas
 
@@ -138,6 +140,24 @@ modules:
       - map: map_deposits
       - map: map_withdraws
 
+  - name: store_activity_counts
+    kind: store
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - source: sf.substreams.v1.Clock
+      - map: map_deposits
+      - map: map_withdraws
+      - map: map_swaps
+
+  - name: store_volume_by_token_amount
+    kind: store
+    updatePolicy: add
+    valueType: bigint
+    inputs:
+      - source: sf.substreams.v1.Clock
+      - map: map_swaps
+
   - name: graph_out
     kind: map
     initialBlock: 124152351
@@ -146,12 +166,20 @@ modules:
       - map: map_pools
       - store: store_pools
       - store: store_cumulative_users
+      - store: store_cumulative_users
         mode: deltas
+      - store: store_total_pool_count
       - store: store_total_pool_count
         mode: deltas
       - store: store_pool_balances
+      - store: store_pool_balances
         mode: deltas
       - store: store_pool_liquidity
+      - store: store_pool_liquidity
+        mode: deltas
+      - store: store_activity_counts
+        mode: deltas
+      - store: store_volume_by_token_amount
         mode: deltas
       # - map: map_deposits
       # - map: map_withdraws
