@@ -104,7 +104,7 @@ pub fn handle_pool_entity(
         });
 }
 
-pub fn handle_deposit_entity(tables: &mut Tables, map_deposits: Deposits, protocol_id: &String) {
+pub fn _handle_deposit_entity(tables: &mut Tables, map_deposits: Deposits, protocol_id: &String) {
     map_deposits.data.iter().for_each(|deposit| {
         tables
             .create_row("Deposit", &deposit.id)
@@ -136,7 +136,7 @@ pub fn handle_deposit_entity(tables: &mut Tables, map_deposits: Deposits, protoc
     });
 }
 
-pub fn handle_withdraw_entity(tables: &mut Tables, map_withdraws: Withdraws, protocol_id: &String) {
+pub fn _handle_withdraw_entity(tables: &mut Tables, map_withdraws: Withdraws, protocol_id: &String) {
     map_withdraws.data.iter().for_each(|withdraw| {
         tables
             .create_row("Withdraw", &withdraw.id)
@@ -168,7 +168,7 @@ pub fn handle_withdraw_entity(tables: &mut Tables, map_withdraws: Withdraws, pro
     });
 }
 
-pub fn handle_swap_entity(tables: &mut Tables, map_swaps: Swaps, protocol_id: &String) {
+pub fn _handle_swap_entity(tables: &mut Tables, map_swaps: Swaps, protocol_id: &String) {
     map_swaps.data.iter().for_each(|swap| {
         tables
             .create_row("Swap", &swap.id)
