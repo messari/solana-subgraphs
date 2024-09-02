@@ -1,6 +1,6 @@
 use substreams::scalar::BigInt;
 use substreams::skip_empty_output;
-use substreams::store::{StoreAdd, StoreAddBigInt, StoreNew};
+use substreams::store::{StoreNew, StoreSet, StoreSetBigInt};
 
 use crate::key_store::StoreKey;
 use crate::pb::messari::orca_whirlpool::v1::{Deposits, Swaps, Withdraws};
@@ -10,46 +10,67 @@ pub fn store_pool_balances(
     pool_deposits: Deposits,
     pool_withdraws: Withdraws,
     pool_swaps: Swaps,
-    store: StoreAddBigInt,
+    store: StoreSetBigInt,
 ) {
     skip_empty_output();
 
-    pool_deposits.data.iter().for_each(|deposit| {
-        store.add(
-            0,
-            StoreKey::PoolBalance.get_unique_keys(&deposit.to, &deposit.token_a),
-            &BigInt::try_from(deposit.amount_a.clone()).unwrap(),
-        );
-        store.add(
-            0,
-            StoreKey::PoolBalance.get_unique_keys(&deposit.to, &deposit.token_b),
-            &BigInt::try_from(deposit.amount_b.clone()).unwrap(),
-        );
+    process_pool_balances(&pool_deposits.data, &store, |item| {
+        vec![
+            (
+                item.to.clone(),
+                item.token_a.clone(),
+                item.token_a_balance.clone(),
+            ),
+            (
+                item.to.clone(),
+                item.token_b.clone(),
+                item.token_b_balance.clone(),
+            ),
+        ]
     });
 
-    pool_withdraws.data.iter().for_each(|withdraw| {
-        store.add(
-            0,
-            StoreKey::PoolBalance.get_unique_keys(&withdraw.to, &withdraw.token_a),
-            &BigInt::try_from(withdraw.amount_a.clone()).unwrap().neg(),
-        );
-        store.add(
-            0,
-            StoreKey::PoolBalance.get_unique_keys(&withdraw.to, &withdraw.token_b),
-            &BigInt::try_from(withdraw.amount_b.clone()).unwrap().neg(),
-        );
+    process_pool_balances(&pool_withdraws.data, &store, |item| {
+        vec![
+            (
+                item.to.clone(),
+                item.token_a.clone(),
+                item.token_a_balance.clone(),
+            ),
+            (
+                item.to.clone(),
+                item.token_b.clone(),
+                item.token_b_balance.clone(),
+            ),
+        ]
     });
 
-    pool_swaps.data.iter().for_each(|swap| {
-        store.add(
-            0,
-            StoreKey::PoolBalance.get_unique_keys(&swap.to, &swap.token_in),
-            &BigInt::try_from(swap.amount_in.clone()).unwrap(),
-        );
-        store.add(
-            0,
-            StoreKey::PoolBalance.get_unique_keys(&swap.to, &swap.token_out),
-            &BigInt::try_from(swap.amount_out.clone()).unwrap().neg(),
-        );
+    process_pool_balances(&pool_swaps.data, &store, |item| {
+        vec![
+            (
+                item.to.clone(),
+                item.token_in.clone(),
+                item.token_in_balance.clone(),
+            ),
+            (
+                item.to.clone(),
+                item.token_out.clone(),
+                item.token_out_balance.clone(),
+            ),
+        ]
+    });
+}
+
+fn process_pool_balances<T, F>(items: &[T], store: &StoreSetBigInt, f: F)
+where
+    F: Fn(&T) -> Vec<(String, String, String)>,
+{
+    items.iter().for_each(|item| {
+        f(item).iter().for_each(|(to, token, balance)| {
+            store.set(
+                0,
+                StoreKey::PoolBalance.get_unique_keys(to, token),
+                &BigInt::try_from(balance.clone()).unwrap_or(BigInt::zero()),
+            );
+        });
     });
 }

@@ -13,11 +13,12 @@ pub fn store_pool_liquidity(
 ) {
     skip_empty_output();
 
+    let zero = BigInt::from(0);
     pool_deposits.data.iter().for_each(|deposit| {
         store.add(
             0,
             StoreKey::PoolLiquidity.get_unique_key(&deposit.to),
-            &BigInt::try_from(deposit.output_amount.clone()).unwrap(),
+            &BigInt::try_from(deposit.output_amount.clone()).unwrap_or(zero.clone()),
         );
     });
 
@@ -26,7 +27,7 @@ pub fn store_pool_liquidity(
             0,
             StoreKey::PoolLiquidity.get_unique_key(&withdraw.to),
             &BigInt::try_from(withdraw.output_amount.clone())
-                .unwrap()
+                .unwrap_or(zero.clone())
                 .neg(),
         );
     });

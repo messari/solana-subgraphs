@@ -29,13 +29,16 @@ message Deposit {
   string token_a = 2;
   string token_b = 3;
 
-  string amount_a = 4;
-  string amount_b = 5;
+  string token_a_balance = 4;
+  string token_b_balance = 5;
 
-  string output_amount = 6;
+  string amount_a = 6;
+  string amount_b = 7;
 
-  string to = 7;
-  string from = 8;
+  string output_amount = 8;
+
+  string to = 9;
+  string from = 10;
 
   uint64 slot = 100;
   string txn_id = 101;
@@ -54,13 +57,16 @@ message Withdraw {
   string token_a = 2;
   string token_b = 3; 
 
-  string amount_a = 4;
-  string amount_b = 5;
+  string token_a_balance = 4;
+  string token_b_balance = 5;
 
-  string output_amount = 6;
+  string amount_a = 6;
+  string amount_b = 7;
+
+  string output_amount = 8;
   
-  string to = 7;
-  string from = 8;
+  string to = 9;
+  string from = 10;
 
   uint64 slot = 100;
   string txn_id = 101;
@@ -79,11 +85,14 @@ message Swap {
   string amount_in = 2;
   string amount_out = 3;
   
-  string token_in = 4;
-  string token_out = 5;
+  string token_in_balance = 4;
+  string token_out_balance = 5;
 
-  string to = 6;
-  string from = 7;
+  string token_in = 6;
+  string token_out = 7;
+
+  string to = 8;
+  string from = 9;
 
   uint64 slot = 100;
   string txn_id = 101;
@@ -144,11 +153,16 @@ message IncreaseLiquidity {
   message Instruction {
       string liquidity_amount = 1;
       
-      string token_max_a = 3;
-      optional string amount_a = 2;
-      
-      string token_max_b = 5;
-      optional string amount_b = 4;
+      string token_max_a = 2;
+      string token_max_b = 3;
+
+      optional string amount_a = 4;
+      optional string amount_a_pre = 5;
+      optional string amount_a_post = 6;
+
+      optional string amount_b = 7;
+      optional string amount_b_pre = 8;
+      optional string amount_b_post = 9;
   }
 
   message Accounts {
@@ -174,10 +188,16 @@ message DecreaseLiquidity {
       string liquidity_amount = 1;
       
       string token_min_a = 2;
-      optional string amount_a = 3;
+      string token_min_b = 3;
       
-      string token_min_b = 4;
-      optional string amount_b = 5;
+      optional string amount_a = 4;
+      optional string amount_a_pre = 5;
+      optional string amount_a_post = 6;
+
+      optional string amount_b = 7;
+      optional string amount_b_pre = 8;
+      optional string amount_b_post = 9;
+
   }
 
   message Accounts {
@@ -204,18 +224,30 @@ message TwoHopSwap {
     
     optional string amount_a_one = 2;
     optional string amount_b_one = 3;
-    
-    optional string amount_a_two = 4;
-    optional string amount_b_two = 5;
 
-    string other_amount_threshold = 6;
+    optional string amount_a_one_pre = 4;
+    optional string amount_a_one_post = 5;
+
+    optional string amount_b_one_pre = 6;
+    optional string amount_b_one_post = 7;
     
-    bool amount_specified_is_input = 7;
-    bool a_to_b_one = 8;
-    bool a_to_b_two = 9;
+    optional string amount_a_two = 8;
+    optional string amount_b_two = 9;
+
+    optional string amount_a_two_pre = 10;
+    optional string amount_a_two_post = 11;
+
+    optional string amount_b_two_pre = 12;
+    optional string amount_b_two_post = 13;
+
+    string other_amount_threshold = 14;
     
-    string sqrt_price_limit_one = 10;
-    string sqrt_price_limit_two = 11;
+    bool amount_specified_is_input = 15;
+    bool a_to_b_one = 16;
+    bool a_to_b_two = 17;
+    
+    string sqrt_price_limit_one = 18;
+    string sqrt_price_limit_two = 19;
   }
 
   message Accounts {
@@ -249,14 +281,20 @@ message OrcaSwap {
   message Instruction {
     string amount = 1;
     
-    optional string amount_a = 2;
-    optional string amount_b = 3;
+    optional string amount_a_pre = 2;
+    optional string amount_a_post = 3;
+
+    optional string amount_b_pre = 4;
+    optional string amount_b_post = 5;
+
+    optional string amount_a = 6;
+    optional string amount_b = 7;
     
-    string other_amount_threshold = 4;
-    string sqrt_price_limit = 5;
+    string other_amount_threshold = 8;
+    string sqrt_price_limit = 9;
     
-    bool amount_specified_is_input = 6;
-    bool a_to_b = 7;
+    bool amount_specified_is_input = 10;
+    bool a_to_b = 11;
   }
 
   message Accounts {

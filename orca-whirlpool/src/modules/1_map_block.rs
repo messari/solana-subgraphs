@@ -1,5 +1,6 @@
 use crate::constants;
 use crate::orca_instructions::OrcaInstructions;
+use crate::traits::balance_of::BalanceOf;
 use crate::utils;
 use crate::{
     instructions::{
@@ -59,16 +60,16 @@ fn process_instruction(
             process_initialize_pool(data, input_accounts)
         }
         OrcaInstructions::IncreaseLiquidity(data, input_accounts) => {
-            process_increase_liquidity(data, input_accounts, all_instructions)
+            process_increase_liquidity(data, input_accounts, confirmed_txn)
         }
         OrcaInstructions::DecreaseLiquidity(data, input_accounts) => {
-            process_decrease_liquidity(data, input_accounts, all_instructions)
+            process_decrease_liquidity(data, input_accounts, confirmed_txn)
         }
         OrcaInstructions::TwoHopSwap(data, input_accounts) => {
-            process_two_hop_swap(data, input_accounts, all_instructions)
+            process_two_hop_swap(data, input_accounts, all_instructions, confirmed_txn)
         }
         OrcaInstructions::Swap(data, input_accounts) => {
-            process_swap(data, input_accounts, all_instructions)
+            process_swap(data, input_accounts, confirmed_txn)
         }
     };
 
@@ -111,35 +112,27 @@ fn process_initialize_pool(
 fn process_increase_liquidity(
     data: IncreaseLiquidityInstruction,
     input_accounts: IncreaseLiquidityInstructionAccounts,
-    all_instructions: &[InstructionView],
+    confirmed_txn: &ConfirmedTransaction,
 ) -> Option<Type> {
-    let transfer_token_a_instruction = find_transfer_instruction(
-        all_instructions,
-        &[
-            &input_accounts.token_owner_account_a,
-            &input_accounts.token_vault_a,
-            &input_accounts.position_authority,
-        ],
-    );
-
-    let transfer_token_b_instruction = find_transfer_instruction(
-        all_instructions,
-        &[
-            &input_accounts.token_owner_account_b,
-            &input_accounts.token_vault_b,
-            &input_accounts.position_authority,
-        ],
-    );
+    let (token_a_pre_bal, token_a_post_bal) =
+        confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_a);
+    let (token_b_pre_bal, token_b_post_bal) =
+        confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_b);
 
     Some(Type::IncreaseLiquidity(IncreaseLiquidity {
         instruction: Some(increase_liquidity::Instruction {
             liquidity_amount: data.liquidity_amount.to_string(),
 
             token_max_a: data.token_max_a.to_string(),
-            amount_a: utils::get_transfer_amount(transfer_token_a_instruction),
-
             token_max_b: data.token_max_b.to_string(),
-            amount_b: utils::get_transfer_amount(transfer_token_b_instruction),
+
+            amount_a: utils::balance_difference(token_a_pre_bal.clone(), token_a_post_bal.clone()),
+            amount_a_pre: token_a_pre_bal.clone(),
+            amount_a_post: token_a_post_bal.clone(),
+
+            amount_b: utils::balance_difference(token_b_pre_bal.clone(), token_b_post_bal.clone()),
+            amount_b_pre: token_b_pre_bal.clone(),
+            amount_b_post: token_b_post_bal.clone(),
         }),
         accounts: Some(increase_liquidity::Accounts {
             whirlpool: input_accounts.whirlpool.to_string(),
@@ -160,35 +153,27 @@ fn process_increase_liquidity(
 fn process_decrease_liquidity(
     data: DecreaseLiquidityInstruction,
     input_accounts: DecreaseLiquidityInstructionAccounts,
-    all_instructions: &[InstructionView],
+    confirmed_txn: &ConfirmedTransaction,
 ) -> Option<Type> {
-    let transfer_token_a_instruction = find_transfer_instruction(
-        all_instructions,
-        &[
-            &input_accounts.token_vault_a,
-            &input_accounts.token_owner_account_a,
-            &input_accounts.whirlpool,
-        ],
-    );
-
-    let transfer_token_b_instruction = find_transfer_instruction(
-        all_instructions,
-        &[
-            &input_accounts.token_vault_b,
-            &input_accounts.token_owner_account_b,
-            &input_accounts.whirlpool,
-        ],
-    );
+    let (token_a_pre_bal, token_a_post_bal) =
+        confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_a);
+    let (token_b_pre_bal, token_b_post_bal) =
+        confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_b);
 
     Some(Type::DecreaseLiquidity(DecreaseLiquidity {
         instruction: Some(decrease_liquidity::Instruction {
             liquidity_amount: data.liquidity_amount.to_string(),
 
             token_min_a: data.token_min_a.to_string(),
-            amount_a: utils::get_transfer_amount(transfer_token_a_instruction),
-
             token_min_b: data.token_min_b.to_string(),
-            amount_b: utils::get_transfer_amount(transfer_token_b_instruction),
+
+            amount_a: utils::balance_difference(token_a_pre_bal.clone(), token_a_post_bal.clone()),
+            amount_a_pre: token_a_pre_bal.clone(),
+            amount_a_post: token_a_post_bal.clone(),
+
+            amount_b: utils::balance_difference(token_b_pre_bal.clone(), token_b_post_bal.clone()),
+            amount_b_pre: token_b_pre_bal.clone(),
+            amount_b_post: token_b_post_bal.clone(),
         }),
         accounts: Some(decrease_liquidity::Accounts {
             whirlpool: input_accounts.whirlpool.to_string(),
@@ -210,72 +195,62 @@ fn process_two_hop_swap(
     data: TwoHopSwapInstruction,
     input_accounts: TwoHopSwapInstructionAccounts,
     all_instructions: &[InstructionView],
+    confirmed_txn: &ConfirmedTransaction,
 ) -> Option<Type> {
-    let transfer_a_one_instr_addresses = if data.a_to_b_one {
-        vec![
-            &input_accounts.token_owner_account_one_a,
-            &input_accounts.token_vault_one_a,
-            &input_accounts.token_authority,
-        ]
-    } else {
-        vec![
-            &input_accounts.token_vault_one_a,
-            &input_accounts.token_owner_account_one_a,
-            &input_accounts.whirlpool_one,
-        ]
-    };
-
-    let transfer_b_one_instr_addresses = if data.a_to_b_one {
-        vec![
-            &input_accounts.token_vault_one_b,
-            &input_accounts.token_owner_account_one_b,
-            &input_accounts.whirlpool_one,
-        ]
-    } else {
-        vec![
-            &input_accounts.token_owner_account_one_b,
-            &input_accounts.token_vault_one_b,
-            &input_accounts.token_authority,
-        ]
-    };
-
-    let transfer_a_two_instr_addresses = if data.a_to_b_two {
-        vec![
-            &input_accounts.token_owner_account_two_a,
-            &input_accounts.token_vault_two_a,
-            &input_accounts.token_authority,
-        ]
-    } else {
-        vec![
-            &input_accounts.token_vault_two_a,
-            &input_accounts.token_owner_account_two_a,
-            &input_accounts.whirlpool_two,
-        ]
-    };
-
-    let transfer_b_two_instr_addresses = if data.a_to_b_two {
-        vec![
-            &input_accounts.token_vault_two_b,
-            &input_accounts.token_owner_account_two_b,
-            &input_accounts.whirlpool_two,
-        ]
-    } else {
-        vec![
-            &input_accounts.token_owner_account_two_b,
-            &input_accounts.token_vault_two_b,
-            &input_accounts.token_authority,
-        ]
-    };
+    let transfer_a_one_instr_addresses = get_transfer_addresses(
+        data.a_to_b_one,
+        &input_accounts.token_owner_account_one_a,
+        &input_accounts.token_vault_one_a,
+        &input_accounts.token_authority,
+        &input_accounts.whirlpool_one,
+    );
+    let transfer_b_one_instr_addresses = get_transfer_addresses(
+        !data.a_to_b_one,
+        &input_accounts.token_owner_account_one_b,
+        &input_accounts.token_vault_one_b,
+        &input_accounts.token_authority,
+        &input_accounts.whirlpool_one,
+    );
+    let transfer_a_two_instr_addresses = get_transfer_addresses(
+        data.a_to_b_two,
+        &input_accounts.token_owner_account_two_a,
+        &input_accounts.token_vault_two_a,
+        &input_accounts.token_authority,
+        &input_accounts.whirlpool_two,
+    );
+    let transfer_b_two_instr_addresses = get_transfer_addresses(
+        !data.a_to_b_two,
+        &input_accounts.token_owner_account_two_b,
+        &input_accounts.token_vault_two_b,
+        &input_accounts.token_authority,
+        &input_accounts.whirlpool_two,
+    );
 
     let transfer_token_a_one_instruction =
         find_transfer_instruction(all_instructions, &transfer_a_one_instr_addresses);
     let transfer_token_b_one_instruction =
         find_transfer_instruction(all_instructions, &transfer_b_one_instr_addresses);
-
     let transfer_token_a_two_instruction =
         find_transfer_instruction(all_instructions, &transfer_a_two_instr_addresses);
     let transfer_token_b_two_instruction =
         find_transfer_instruction(all_instructions, &transfer_b_two_instr_addresses);
+
+    let (token_a_one_pre_bal, token_a_one_post_bal) = confirmed_txn.balance_of(
+        &input_accounts.whirlpool_one,
+        &input_accounts.token_vault_one_a,
+    );
+    let (token_b_one_pre_bal, token_b_one_post_bal) = confirmed_txn.balance_of(
+        &input_accounts.whirlpool_one,
+        &input_accounts.token_vault_one_b,
+    );
+    let (token_a_two_pre_bal, token_a_two_post_bal) = confirmed_txn.balance_of(
+        &input_accounts.whirlpool_two,
+        &input_accounts.token_vault_two_a,
+    );
+    let (token_b_two_pre_bal, token_b_two_post_bal) = confirmed_txn.balance_of(
+        &input_accounts.whirlpool_two,
+        &input_accounts.token_vault_two_b,
+    );
 
     Some(Type::TwoHopSwap(TwoHopSwap {
         instruction: Some(two_hop_swap::Instruction {
@@ -284,8 +259,20 @@ fn process_two_hop_swap(
             amount_a_one: utils::get_transfer_amount(transfer_token_a_one_instruction),
             amount_b_one: utils::get_transfer_amount(transfer_token_b_one_instruction),
 
+            amount_a_one_pre: token_a_one_pre_bal.clone(),
+            amount_a_one_post: token_a_one_post_bal.clone(),
+
+            amount_b_one_pre: token_b_one_pre_bal.clone(),
+            amount_b_one_post: token_b_one_post_bal.clone(),
+
             amount_a_two: utils::get_transfer_amount(transfer_token_a_two_instruction),
             amount_b_two: utils::get_transfer_amount(transfer_token_b_two_instruction),
+
+            amount_a_two_pre: token_a_two_pre_bal.clone(),
+            amount_a_two_post: token_a_two_post_bal.clone(),
+
+            amount_b_two_pre: token_b_two_pre_bal.clone(),
+            amount_b_two_post: token_b_two_post_bal.clone(),
 
             other_amount_threshold: data.other_amount_threshold.to_string(),
 
@@ -324,48 +311,24 @@ fn process_two_hop_swap(
 fn process_swap(
     data: SwapInstruction,
     input_accounts: SwapInstructionAccounts,
-    all_instructions: &[InstructionView],
+    confirmed_txn: &ConfirmedTransaction,
 ) -> Option<Type> {
-    let (transfer_a_instr_addresses, transfer_b_instr_addresses) = if data.a_to_b {
-        (
-            vec![
-                &input_accounts.token_owner_account_a,
-                &input_accounts.token_vault_a,
-                &input_accounts.token_authority,
-            ],
-            vec![
-                &input_accounts.token_vault_b,
-                &input_accounts.token_owner_account_b,
-                &input_accounts.whirlpool,
-            ],
-        )
-    } else {
-        (
-            vec![
-                &input_accounts.token_vault_a,
-                &input_accounts.token_owner_account_a,
-                &input_accounts.whirlpool,
-            ],
-            vec![
-                &input_accounts.token_owner_account_b,
-                &input_accounts.token_vault_b,
-                &input_accounts.token_authority,
-            ],
-        )
-    };
-
-    let transfer_token_a_instruction =
-        find_transfer_instruction(all_instructions, &transfer_a_instr_addresses);
-
-    let transfer_token_b_instruction =
-        find_transfer_instruction(all_instructions, &transfer_b_instr_addresses);
+    let (token_a_pre_bal, token_a_post_bal) =
+        confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_a);
+    let (token_b_pre_bal, token_b_post_bal) =
+        confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_b);
 
     Some(Type::Swap(OrcaSwap {
         instruction: Some(orca_swap::Instruction {
             amount: data.amount.to_string(),
 
-            amount_a: utils::get_transfer_amount(transfer_token_a_instruction),
-            amount_b: utils::get_transfer_amount(transfer_token_b_instruction),
+            amount_a: utils::balance_difference(token_a_pre_bal.clone(), token_a_post_bal.clone()),
+            amount_a_pre: token_a_pre_bal.clone(),
+            amount_a_post: token_a_post_bal.clone(),
+
+            amount_b: utils::balance_difference(token_b_pre_bal.clone(), token_b_post_bal.clone()),
+            amount_b_pre: token_b_pre_bal.clone(),
+            amount_b_post: token_b_post_bal.clone(),
 
             other_amount_threshold: data.other_amount_threshold.to_string(),
             sqrt_price_limit: data.sqrt_price_limit.to_string(),
@@ -399,4 +362,18 @@ fn find_transfer_instruction<'a>(
             .map(|acc| acc.to_string())
             .eq(accounts.iter().map(|s| s.to_string()))
     })
+}
+
+fn get_transfer_addresses<'a>(
+    is_a_to_b: bool,
+    owner_account: &'a Address<'a>,
+    vault_account: &'a Address<'a>,
+    authority: &'a Address<'a>,
+    whirlpool: &'a Address<'a>,
+) -> Vec<&'a Address<'a>> {
+    if is_a_to_b {
+        vec![owner_account, vault_account, authority]
+    } else {
+        vec![vault_account, owner_account, whirlpool]
+    }
 }

@@ -123,7 +123,7 @@ modules:
 
   - name: store_pool_balances
     kind: store
-    updatePolicy: add
+    updatePolicy: set
     valueType: bigint
     inputs:
       - map: map_deposits

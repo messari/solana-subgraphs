@@ -12,6 +12,7 @@ pub fn map_swaps(
 ) -> Result<Swaps, substreams::errors::Error> {
     skip_empty_output();
 
+    let zero = "0".to_string();
     let mut swaps: Vec<Swap> = Vec::new();
 
     for event in raw_events.data {
@@ -21,28 +22,53 @@ pub fn map_swaps(
                     if let (Some(instruction), Some(accounts)) =
                         (two_hop_swap_event.instruction, two_hop_swap_event.accounts)
                     {
-                        let swap_1 = handle_swap(
+                        swaps.push(handle_swap(
                             instruction.a_to_b_one,
-                            instruction.amount_a_one.unwrap_or_default(),
-                            instruction.amount_b_one.unwrap_or_default(),
+                            instruction
+                                .amount_a_one
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_b_one
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_a_one_post
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_b_one_post
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
                             accounts.token_authority.clone(),
                             accounts.whirlpool_one.clone(),
                             &pool_store,
                             event.clone(),
-                        );
+                        ));
 
-                        let swap_2 = handle_swap(
+                        swaps.push(handle_swap(
                             instruction.a_to_b_two,
-                            instruction.amount_a_two.unwrap_or_default(),
-                            instruction.amount_b_two.unwrap_or_default(),
+                            instruction
+                                .amount_a_two
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_b_two
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_a_two_post
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_b_two_post
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
                             accounts.token_authority,
                             accounts.whirlpool_two,
                             &pool_store,
                             event,
-                        );
-
-                        swaps.push(swap_1);
-                        swaps.push(swap_2);
+                        ));
                     }
                 }
 
@@ -50,17 +76,23 @@ pub fn map_swaps(
                     if let (Some(instruction), Some(accounts)) =
                         (orca_swap_event.instruction, orca_swap_event.accounts)
                     {
-                        let swap = handle_swap(
+                        swaps.push(handle_swap(
                             instruction.a_to_b,
-                            instruction.amount_a.unwrap_or_default(),
-                            instruction.amount_b.unwrap_or_default(),
+                            instruction.amount_a.clone().unwrap_or_else(|| zero.clone()),
+                            instruction.amount_b.clone().unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_a_post
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
+                            instruction
+                                .amount_b_post
+                                .clone()
+                                .unwrap_or_else(|| zero.clone()),
                             accounts.token_authority,
                             accounts.whirlpool,
                             &pool_store,
                             event,
-                        );
-
-                        swaps.push(swap);
+                        ));
                     }
                 }
 
@@ -76,6 +108,8 @@ fn handle_swap(
     a_to_b: bool,
     amount_a: String,
     amount_b: String,
+    token_a_balance: String,
+    token_b_balance: String,
     signer: String,
     pool_address: String,
     pool_store: &StoreGetProto<Pool>,
@@ -83,20 +117,42 @@ fn handle_swap(
 ) -> Swap {
     let pool = pool_store.must_get_last(StoreKey::Pool.get_unique_key(&pool_address));
 
-    let (token_in, amount_in, token_out, amount_out) = if a_to_b {
-        (pool.token_mint_a, amount_a, pool.token_mint_b, amount_b)
-    } else {
-        (pool.token_mint_b, amount_b, pool.token_mint_a, amount_a)
-    };
+    let (token_in, amount_in, token_in_balance, token_out, amount_out, token_out_balance) =
+        if a_to_b {
+            (
+                pool.token_mint_a,
+                amount_a,
+                token_a_balance,
+                pool.token_mint_b,
+                amount_b,
+                token_b_balance,
+            )
+        } else {
+            (
+                pool.token_mint_b,
+                amount_b,
+                token_b_balance,
+                pool.token_mint_a,
+                amount_a,
+                token_a_balance,
+            )
+        };
 
     Swap {
         id: format!("{}-{}", event.txn_id, event.slot),
+
         token_in,
         token_out,
+
+        token_in_balance,
+        token_out_balance,
+
         amount_in,
         amount_out,
+
         from: signer,
         to: pool_address,
+
         slot: event.slot,
         txn_id: event.txn_id,
         block_height: event.block_height,
