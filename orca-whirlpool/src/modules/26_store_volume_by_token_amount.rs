@@ -23,14 +23,18 @@ pub fn store_volume_by_token_amount(clock: Clock, pool_swaps: Swaps, store: Stor
             0,
             StoreKey::PoolDailySnapshot(day_id, Some(Box::new(StoreKey::DailyVolumeByTokenAmount)))
                 .get_unique_keys(&swap.to, &swap.token_in),
-            BigInt::try_from(&swap.amount_in).unwrap_or_default(),
+            BigInt::try_from(&swap.amount_in)
+                .unwrap_or_default()
+                .absolute(),
         );
 
         store.add(
             0,
             StoreKey::PoolDailySnapshot(day_id, Some(Box::new(StoreKey::DailyVolumeByTokenAmount)))
                 .get_unique_keys(&swap.to, &swap.token_out),
-            BigInt::try_from(&swap.amount_out).unwrap_or_default(),
+            BigInt::try_from(&swap.amount_out)
+                .unwrap_or_default()
+                .absolute(),
         );
     });
 }

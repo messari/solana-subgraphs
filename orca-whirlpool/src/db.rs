@@ -87,7 +87,7 @@ pub fn handle_usage_metrics_daily_snapshot_entity(
                 let bigint0 = BigInt::zero();
 
                 tables
-                    .create_row("UsageMetricsDailySnapshot", day_id.to_string())
+                    .update_row("UsageMetricsDailySnapshot", day_id.to_string())
                     .set("protocol", protocol_id)
                     .set("dailyActiveUsers", &bigint0)
                     .set("cumulativeUniqueUsers", &bigint0)
@@ -284,7 +284,7 @@ pub fn handle_liquidity_pool_daily_snapshot_entity(
 
             if delta.old_value == BigInt::zero() {
                 tables
-                    .create_row(
+                    .update_row(
                         "LiquidityPoolDailySnapshot",
                         format!("{pool_address}-{day_id}"),
                     )
