@@ -4,7 +4,6 @@ use crate::{
 };
 use substreams::{
     log, skip_empty_output,
-    log, skip_empty_output,
     store::{StoreGet, StoreGetProto},
 };
 
