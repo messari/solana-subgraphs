@@ -4,6 +4,7 @@ use crate::{
 };
 use substreams::{
     log, skip_empty_output,
+    log, skip_empty_output,
     store::{StoreGet, StoreGetProto},
 };
 
@@ -32,6 +33,7 @@ pub fn map_withdraws(
                     log::info!("Pool not found: {:?}", accounts.whirlpool);
                     return None;
                 }
+
                 let pool = pool.unwrap();
 
                 Some(Withdraw {

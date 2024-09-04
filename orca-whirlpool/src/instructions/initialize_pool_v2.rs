@@ -6,6 +6,11 @@ use substreams_solana::block_view::InstructionView;
 use substreams_solana::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
+pub struct WhirlpoolBumps {
+    pub whirlpool_bump: u8,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug)]
 pub struct InitializePoolInstructionV2 {
     // The desired tick spacing for this pool.
     pub tick_spacing: u16,
