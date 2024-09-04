@@ -8,10 +8,9 @@ pub fn map_pools(raw_events: Events) -> Result<Pools, substreams::errors::Error>
     let data: Vec<Pool> = raw_events
         .data
         .into_iter()
-        .filter_map(|event| {
-            if let event::Type::InitalizePool(initialize_pool_event) = event.r#type.unwrap() {
+        .filter_map(|event| match event.r#type {
+            Some(event::Type::InitalizePool(initialize_pool_event)) => {
                 let accounts = initialize_pool_event.accounts.unwrap();
-
                 Some(Pool {
                     address: accounts.whirlpool,
                     token_mint_a: accounts.token_mint_a,
@@ -21,9 +20,20 @@ pub fn map_pools(raw_events: Events) -> Result<Pools, substreams::errors::Error>
                     created_timestamp: event.block_timestamp,
                     created_block_number: event.block_height,
                 })
-            } else {
-                None
             }
+            Some(event::Type::InitalizePoolV2(initialize_pool_v2_event)) => {
+                let accounts = initialize_pool_v2_event.accounts.unwrap();
+                Some(Pool {
+                    address: accounts.whirlpool,
+                    token_mint_a: accounts.token_mint_a,
+                    token_mint_b: accounts.token_mint_b,
+                    token_vault_a: accounts.token_vault_a,
+                    token_vault_b: accounts.token_vault_b,
+                    created_timestamp: event.block_timestamp,
+                    created_block_number: event.block_height,
+                })
+            }
+            _ => None,
         })
         .collect();
 

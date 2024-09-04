@@ -3,7 +3,7 @@ use crate::{
     pb::messari::orca_whirlpool::v1::{event::Type, Deposit, Deposits, Events, Pool},
 };
 use substreams::{
-    skip_empty_output,
+    log, skip_empty_output,
     store::{StoreGet, StoreGetProto},
 };
 
@@ -26,8 +26,13 @@ pub fn map_deposits(
                 let accounts = increase_liquidity_event.accounts?;
                 let instruction = increase_liquidity_event.instruction?;
 
-                let pool =
-                    pools_store.must_get_last(StoreKey::Pool.get_unique_key(&accounts.whirlpool));
+                let pool = pools_store.get_last(StoreKey::Pool.get_unique_key(&accounts.whirlpool));
+
+                if pool.is_none() {
+                    log::info!("Pool not found: {:?}", accounts.whirlpool);
+                    return None;
+                }
+                let pool = pool.unwrap();
 
                 Some(Deposit {
                     id,

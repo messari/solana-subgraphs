@@ -13,7 +13,7 @@ impl DiscriminatorConstants {
     pub const SWAP: [u8; 8] = [248, 198, 158, 145, 225, 117, 135, 200];
 
     // V2
-    pub const _INITIALIZE_POOL_V2: [u8; 8] = [207, 45, 87, 242, 27, 63, 204, 67];
+    pub const INITIALIZE_POOL_V2: [u8; 8] = [207, 45, 87, 242, 27, 63, 204, 67];
 
     pub const _DECREASE_LIQUIDITY_V2: [u8; 8] = [58, 127, 188, 62, 79, 82, 196, 96];
     pub const _INCREASE_LIQUIDITY_V2: [u8; 8] = [133, 29, 89, 223, 69, 238, 176, 10];

@@ -146,6 +146,31 @@ message InitializePool {
   }
 }
 
+message InitializePoolV2 {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+    uint32 tick_spacing = 1;
+    string initial_sqrt_price = 2;
+  }
+
+  message Accounts {
+    string whirlpools_config = 1;
+    string token_mint_a = 2;
+    string token_mint_b = 3;
+    string funder = 4;
+    string whirlpool = 5;
+    string token_vault_a = 6;
+    string token_vault_b = 7;
+    string fee_tier = 8;
+    string token_program_a = 9;
+    string token_program_b = 10;
+    string system_program = 11;
+    string rent = 12;
+  }
+}
+
 message IncreaseLiquidity {
   Instruction instruction = 1;
   Accounts accounts = 2;

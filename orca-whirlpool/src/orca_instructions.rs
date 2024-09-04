@@ -3,6 +3,7 @@ use crate::instructions::{
     decrease_liquidity::{DecreaseLiquidityInstruction, DecreaseLiquidityInstructionAccounts},
     increase_liquidity::{IncreaseLiquidityInstruction, IncreaseLiquidityInstructionAccounts},
     initialize_pool::{InitializePoolInstruction, InitializePoolInstructionAccounts},
+    initialize_pool_v2::{InitializePoolInstructionAccountsV2, InitializePoolInstructionV2},
     swap::{SwapInstruction, SwapInstructionAccounts},
     two_hop_swap::{TwoHopSwapInstruction, TwoHopSwapInstructionAccounts},
 };
@@ -17,6 +18,10 @@ pub enum OrcaInstructions<'a> {
     InitializePool(
         InitializePoolInstruction,
         InitializePoolInstructionAccounts<'a>,
+    ),
+    InitializePoolV2(
+        InitializePoolInstructionV2,
+        InitializePoolInstructionAccountsV2<'a>,
     ),
     IncreaseLiquidity(
         IncreaseLiquidityInstruction,
@@ -50,6 +55,13 @@ impl<'a> OrcaInstructions<'a> {
                     InitializePoolInstructionAccounts,
                 >(&mut rest, instruction_view)?;
                 Some(OrcaInstructions::InitializePool(data, input_accounts))
+            }
+            x if x == constants::DiscriminatorConstants::INITIALIZE_POOL_V2 => {
+                let (data, input_accounts) = Self::deserialize_instruction::<
+                    InitializePoolInstructionV2,
+                    InitializePoolInstructionAccountsV2,
+                >(&mut rest, instruction_view)?;
+                Some(OrcaInstructions::InitializePoolV2(data, input_accounts))
             }
             x if x == constants::DiscriminatorConstants::INCREASE_LIQUIDITY => {
                 let (data, input_accounts) = Self::deserialize_instruction::<

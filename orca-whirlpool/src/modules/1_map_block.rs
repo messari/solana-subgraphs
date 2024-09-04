@@ -7,13 +7,14 @@ use crate::{
         decrease_liquidity::{DecreaseLiquidityInstruction, DecreaseLiquidityInstructionAccounts},
         increase_liquidity::{IncreaseLiquidityInstruction, IncreaseLiquidityInstructionAccounts},
         initialize_pool::{InitializePoolInstruction, InitializePoolInstructionAccounts},
+        initialize_pool_v2::{InitializePoolInstructionAccountsV2, InitializePoolInstructionV2},
         swap::{SwapInstruction, SwapInstructionAccounts},
         two_hop_swap::{TwoHopSwapInstruction, TwoHopSwapInstructionAccounts},
     },
     pb::messari::orca_whirlpool::v1::{
-        decrease_liquidity, event::Type, increase_liquidity, initialize_pool, orca_swap,
-        two_hop_swap, DecreaseLiquidity, Event, Events, IncreaseLiquidity, InitializePool,
-        OrcaSwap, TwoHopSwap,
+        decrease_liquidity, event::Type, increase_liquidity, initialize_pool, initialize_pool_v2,
+        orca_swap, two_hop_swap, DecreaseLiquidity, Event, Events, IncreaseLiquidity,
+        InitializePool, InitializePoolV2, OrcaSwap, TwoHopSwap,
     },
 };
 use substreams::skip_empty_output;
@@ -59,6 +60,9 @@ fn process_instruction(
         OrcaInstructions::InitializePool(data, input_accounts) => {
             process_initialize_pool(data, input_accounts)
         }
+        OrcaInstructions::InitializePoolV2(data, input_accounts) => {
+            process_initialize_pool_v2(data, input_accounts)
+        }
         OrcaInstructions::IncreaseLiquidity(data, input_accounts) => {
             process_increase_liquidity(data, input_accounts, confirmed_txn)
         }
@@ -103,6 +107,32 @@ fn process_initialize_pool(
             token_vault_b: input_accounts.token_vault_b.to_string(),
             fee_tier: input_accounts.fee_tier.to_string(),
             token_program: input_accounts.token_program.to_string(),
+            system_program: input_accounts.system_program.to_string(),
+            rent: input_accounts.rent.to_string(),
+        }),
+    }))
+}
+
+fn process_initialize_pool_v2(
+    data: InitializePoolInstructionV2,
+    input_accounts: InitializePoolInstructionAccountsV2,
+) -> Option<Type> {
+    Some(Type::InitalizePoolV2(InitializePoolV2 {
+        instruction: Some(initialize_pool_v2::Instruction {
+            tick_spacing: data.tick_spacing as u32,
+            initial_sqrt_price: data.initial_sqrt_price.to_string(),
+        }),
+        accounts: Some(initialize_pool_v2::Accounts {
+            whirlpools_config: input_accounts.whirlpools_config.to_string(),
+            token_mint_a: input_accounts.token_mint_a.to_string(),
+            token_mint_b: input_accounts.token_mint_b.to_string(),
+            funder: input_accounts.funder.to_string(),
+            whirlpool: input_accounts.whirlpool.to_string(),
+            token_vault_a: input_accounts.token_vault_a.to_string(),
+            token_vault_b: input_accounts.token_vault_b.to_string(),
+            fee_tier: input_accounts.fee_tier.to_string(),
+            token_program_a: input_accounts.token_program_a.to_string(),
+            token_program_b: input_accounts.token_program_b.to_string(),
             system_program: input_accounts.system_program.to_string(),
             rent: input_accounts.rent.to_string(),
         }),

@@ -4,9 +4,9 @@ use crate::{
 };
 
 use substreams::{
-    key,
+    key, log,
     scalar::{BigDecimal, BigInt},
-    store::{DeltaBigInt, DeltaExt, DeltaInt64, Deltas, StoreGetProto},
+    store::{DeltaBigInt, DeltaExt, DeltaInt64, Deltas, StoreGet, StoreGetProto},
 };
 use substreams_entity_change::tables::Tables;
 
@@ -77,7 +77,13 @@ pub fn handle_pool_entity(
             let pool_address = key::segment_at(&delta.key, 1);
             let input_token = key::segment_at(&delta.key, 2);
 
-            let pool = pools_store.must_get_last(StoreKey::Pool.get_unique_key(pool_address));
+            let pool = pools_store.get_last(StoreKey::Pool.get_unique_key(pool_address));
+
+            if pool.is_none() {
+                log::info!("Pool not found: {pool_address}");
+                return;
+            }
+            let pool = pool.unwrap();
 
             let balance_field = if input_token == pool.token_mint_a {
                 "token0Balance"
@@ -136,7 +142,11 @@ pub fn _handle_deposit_entity(tables: &mut Tables, map_deposits: Deposits, proto
     });
 }
 
-pub fn _handle_withdraw_entity(tables: &mut Tables, map_withdraws: Withdraws, protocol_id: &String) {
+pub fn _handle_withdraw_entity(
+    tables: &mut Tables,
+    map_withdraws: Withdraws,
+    protocol_id: &String,
+) {
     map_withdraws.data.iter().for_each(|withdraw| {
         tables
             .create_row("Withdraw", &withdraw.id)

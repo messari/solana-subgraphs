@@ -1,5 +1,6 @@
 use crate::key_store::StoreKey;
 use crate::pb::messari::orca_whirlpool::v1::{event::Type, Event, Events, Pool, Swap, Swaps};
+use substreams::log;
 use substreams::{
     skip_empty_output,
     store::{StoreGet, StoreGetProto},
@@ -22,7 +23,7 @@ pub fn map_swaps(
                     if let (Some(instruction), Some(accounts)) =
                         (two_hop_swap_event.instruction, two_hop_swap_event.accounts)
                     {
-                        swaps.push(handle_swap(
+                        let swap_a_to_b_one = handle_swap(
                             instruction.a_to_b_one,
                             instruction
                                 .amount_a_one
@@ -44,9 +45,9 @@ pub fn map_swaps(
                             accounts.whirlpool_one.clone(),
                             &pool_store,
                             event.clone(),
-                        ));
+                        );
 
-                        swaps.push(handle_swap(
+                        let swap_a_to_b_two = handle_swap(
                             instruction.a_to_b_two,
                             instruction
                                 .amount_a_two
@@ -68,7 +69,15 @@ pub fn map_swaps(
                             accounts.whirlpool_two,
                             &pool_store,
                             event,
-                        ));
+                        );
+
+                        if let Some(swap) = swap_a_to_b_one {
+                            swaps.push(swap);
+                        }
+
+                        if let Some(swap) = swap_a_to_b_two {
+                            swaps.push(swap);
+                        }
                     }
                 }
 
@@ -76,7 +85,7 @@ pub fn map_swaps(
                     if let (Some(instruction), Some(accounts)) =
                         (orca_swap_event.instruction, orca_swap_event.accounts)
                     {
-                        swaps.push(handle_swap(
+                        let swap_a_to_b = handle_swap(
                             instruction.a_to_b,
                             instruction.amount_a.clone().unwrap_or_else(|| zero.clone()),
                             instruction.amount_b.clone().unwrap_or_else(|| zero.clone()),
@@ -92,7 +101,11 @@ pub fn map_swaps(
                             accounts.whirlpool,
                             &pool_store,
                             event,
-                        ));
+                        );
+
+                        if let Some(swap) = swap_a_to_b {
+                            swaps.push(swap);
+                        }
                     }
                 }
 
@@ -114,8 +127,15 @@ fn handle_swap(
     pool_address: String,
     pool_store: &StoreGetProto<Pool>,
     event: Event,
-) -> Swap {
-    let pool = pool_store.must_get_last(StoreKey::Pool.get_unique_key(&pool_address));
+) -> Option<Swap> {
+    let pool = pool_store.get_last(StoreKey::Pool.get_unique_key(&pool_address));
+
+    if pool.is_none() {
+        log::info!("Pool not found: {:?}", pool_address);
+        return None;
+    }
+
+    let pool = pool.unwrap();
 
     let (token_in, amount_in, token_in_balance, token_out, amount_out, token_out_balance) =
         if a_to_b {
@@ -138,7 +158,7 @@ fn handle_swap(
             )
         };
 
-    Swap {
+    Some(Swap {
         id: format!("{}-{}", event.txn_id, event.slot),
 
         token_in,
@@ -158,5 +178,5 @@ fn handle_swap(
         block_height: event.block_height,
         block_timestamp: event.block_timestamp,
         block_hash: event.block_hash,
-    }
+    })
 }
