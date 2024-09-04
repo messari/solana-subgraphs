@@ -4,7 +4,7 @@ use crate::{
 };
 
 use substreams::{
-    key,
+    key, log,
     pb::substreams::store_delta::Operation,
     scalar::{BigDecimal, BigInt},
     store::{
@@ -233,6 +233,7 @@ pub fn handle_pool_entity(
                 log::info!("Pool not found: {pool_address}");
                 return;
             }
+
             let pool = pool.unwrap();
 
             let balance_field = if input_token == pool.token_mint_a {
@@ -280,7 +281,14 @@ pub fn handle_liquidity_pool_daily_snapshot_entity(
             let day_id = key::segment_at(&delta.key, 1);
             let pool_address = key::segment_at(&delta.key, 3);
             let token_address = key::segment_at(&delta.key, 4);
-            let pool = pool_store.must_get_last(StoreKey::Pool.get_unique_key(pool_address));
+            let pool = pool_store.get_last(StoreKey::Pool.get_unique_key(pool_address));
+
+            if pool.is_none() {
+                log::info!("Pool not found: {pool_address}");
+                return;
+            }
+
+            let pool = pool.unwrap();
 
             if delta.old_value == BigInt::zero() {
                 tables
