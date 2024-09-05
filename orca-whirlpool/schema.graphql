@@ -1,75 +1,231 @@
-type InitializePool @entity {
+type Protocol @entity {
+  " PDA of the protocol "
   id: ID!
 
-  bumps: BigInt!
-  tick_spacing: BigInt!
-  initial_sqrt_price: BigInt!
+  " Number of cumulative unique users "
+  cumulativeUniqueUsers: BigInt!
 
-  slot: BigInt!
-  txn_id: String!
-  block_height: BigInt!
-  block_timestamp: BigInt!
-  block_hash: String!
+  " Total number of pools "
+  totalPoolCount: BigInt!
+
+  ##### Pools #####
+
+  " All pools that belong to this protocol "
+  pools: [Pool!]! @derivedFrom(field: "protocol")
 }
 
-type IncreaseLiquidity @entity {
+type Pool @entity {
+  " PDA of the pool "
   id: ID!
 
-  liquidity_amount: BigInt!
-  token_max_a: BigInt!
-  token_max_b: BigInt!
+  " The protocol this pool belongs to "
+  protocol: Protocol!
 
-  slot: BigInt!
-  txn_id: String!
-  block_height: BigInt!
-  block_timestamp: BigInt!
-  block_hash: String!
+  " Tokens that need to be deposited to take a position in protocol. e.g. WETH and USDC to deposit into the WETH-USDC pool. Array to account for multi-asset pools like Curve and Balancer "
+  inputTokens: [String!]!
+
+  " Token that is minted to track ownership of position in protocol "
+  outputToken: String
+
+  " All trade volume occurred in a given day for a specific input token, in native amount. The ordering should be the same as the pool's `inputTokens` field. "
+  cumulativeVolumeByTokenAmount: [BigInt!]!
+
+  " Amount of token0 in the pool. "
+  token0Balance: BigInt!
+
+  " Amount of token1 in the pool. "
+  token1Balance: BigInt!
+
+  " Total supply of output token. Note that certain DEXes don't have an output token (e.g. Bancor) "
+  outputTokenSupply: BigInt
+
+  " Creation timestamp "
+  createdTimestamp: BigInt!
+
+  " Creation block number "
+  createdBlockNumber: BigInt!
+
+  ##### Instruction #####
+
+  " All deposit (add liquidity) instructions occurred in this pool "
+  deposits: [Deposit!]! @derivedFrom(field: "pool")
+
+  " All withdraw (remove liquidity) instructions occurred in this pool "
+  withdraws: [Withdraw!]! @derivedFrom(field: "pool")
+
+  " All trade (swap) instructions occurred in this pool "
+  swaps: [Swap!]! @derivedFrom(field: "pool")
 }
 
-type DecreaseLiquidity @entity {
+##################################
+##### Instruction-Level Data #####
+##################################
+
+"""
+An instruction is any user action that occurs in a protocol. Generally, they are Ethereum events
+emitted by a function in the smart contracts, stored in transaction receipts as event logs.
+However, some user actions of interest are function calls that don't emit events. For example,
+the deposit and withdraw functions in Yearn do not emit any events. In our subgraphs, we still
+store them as events, although they are not technically Ethereum events emitted by smart
+contracts.
+"""
+interface Instruction {
+  " { Instruction type }-{ Transaction hash }-{ Log index } "
   id: ID!
 
-  liquidity_amount: BigInt!
-  token_min_a: BigInt!
-  token_min_b: BigInt!
+  " Block hash of the block that emitted this instruction "
+  blockHash: String!
 
+  " The protocol this transaction belongs to "
+  protocol: Protocol!
+
+  " Address that received the tokens "
+  to: String!
+
+  " Address that sent the tokens "
+  from: String!
+
+  " slot of this instruction "
   slot: BigInt!
-  txn_id: String!
-  block_height: BigInt!
-  block_timestamp: BigInt!
-  block_hash: String!
+
+  " Block number of this instruction "
+  blockNumber: BigInt!
+
+  " Timestamp of this instruction "
+  timestamp: BigInt!
 }
 
-type TwoHopSwap @entity {
+type Deposit implements Instruction @entity {
+  " { Deposit }-{ Transaction hash }-{ Log index } "
   id: ID!
 
-  amount: BigInt!
-  other_amount_threshold: BigInt!
-  amount_specified_is_input: Boolean!
-  a_to_b_one: Boolean!
-  a_to_b_two: Boolean!
-  sqrt_price_limit_one: BigInt!
-  sqrt_price_limit_two: BigInt!
+  " Block hash of the block that emitted this instruction "
+  blockHash: String!
 
+  " The protocol this transaction belongs to "
+  protocol: Protocol!
+
+  " Address that received the tokens "
+  to: String!
+
+  " Address that sent the tokens "
+  from: String!
+
+  " slot of this instruction "
   slot: BigInt!
-  txn_id: String!
-  block_height: BigInt!
-  block_timestamp: BigInt!
-  block_hash: String!
+
+  " Block number of this instruction "
+  blockNumber: BigInt!
+
+  " Timestamp of this instruction "
+  timestamp: BigInt!
+
+  " Input tokens of the pool. E.g. WETH and USDC to a WETH-USDC pool "
+  inputTokens: [String!]!
+
+  " Output token of the pool. E.g. the UNI-LP token "
+  outputToken: String!
+
+  " Amount of input tokens in the token's native unit "
+  inputTokenAmounts: [BigInt!]!
+
+  " Amount of output tokens in the token's native unit "
+  outputTokenAmount: BigInt!
+
+  " USD-normalized value of the transaction of the underlying (e.g. sum of tokens deposited into a pool) "
+  amountUSD: BigDecimal
+
+  " The pool involving this transaction "
+  pool: Pool!
 }
 
-type Swap @entity {
+type Withdraw implements Instruction @entity {
+  " withdraw-{ Transaction hash }-{ Log index }"
   id: ID!
 
-  amount: BigInt!
-  other_amount_threshold: BigInt!
-  sqrt_price_limit: BigInt!
-  amount_specified_is_input: Boolean!
-  a_to_b: Boolean!
+  " Block hash of the block that emitted this instruction "
+  blockHash: String!
 
+  " The protocol this transaction belongs to "
+  protocol: Protocol!
+
+  " Address that received the tokens "
+  to: String!
+
+  " Address that sent the tokens "
+  from: String!
+
+  " slot of this instruction "
   slot: BigInt!
-  txn_id: String!
-  block_height: BigInt!
-  block_timestamp: BigInt!
-  block_hash: String!
+
+  " Block number of this instruction "
+  blockNumber: BigInt!
+
+  " Timestamp of this instruction "
+  timestamp: BigInt!
+
+  " Input tokens of the pool (not input tokens of the event/transaction). E.g. WETH and USDC from a WETH-USDC pool "
+  inputTokens: [String!]!
+
+  " Output token of the pool (not output token of the event/transaction). E.g. the UNI-LP token "
+  outputToken: String!
+
+  " Amount of input tokens in the token's native unit "
+  inputTokenAmounts: [BigInt!]!
+
+  " Amount of output tokens in the token's native unit "
+  outputTokenAmount: BigInt!
+
+  " USD-normalized value of the transaction of the underlying (e.g. sum of tokens withdrawn from a pool) "
+  amountUSD: BigDecimal
+
+  " The pool involving this transaction "
+  pool: Pool!
+}
+
+type Swap implements Instruction @entity {
+  " swap-{ Transaction hash }-{ Log index } "
+  id: ID!
+
+  " Block hash of the block that emitted this instruction "
+  blockHash: String!
+
+  " The protocol this transaction belongs to "
+  protocol: Protocol!
+
+  " Address that received the tokens "
+  to: String!
+
+  " Address that sent the tokens "
+  from: String!
+
+  " slot of this instruction "
+  slot: BigInt!
+
+  " Block number of this instruction "
+  blockNumber: BigInt!
+
+  " Timestamp of this instruction "
+  timestamp: BigInt!
+
+  " Token deposited into pool "
+  tokenIn: String!
+
+  " Amount of token deposited into pool in native units "
+  amountIn: BigInt!
+
+  " Amount of token deposited into pool in USD "
+  amountInUSD: BigDecimal
+
+  " Token withdrawn from pool "
+  tokenOut: String!
+
+  " Amount of token withdrawn from pool in native units "
+  amountOut: BigInt!
+
+  " Amount of token withdrawn from pool in USD "
+  amountOutUSD: BigDecimal
+
+  " The pool involving this transaction "
+  pool: Pool!
 }

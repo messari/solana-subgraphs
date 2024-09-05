@@ -2,17 +2,117 @@ syntax = "proto3";
 
 package messari.orca_whirlpool.v1;
 
+message Pools {
+  repeated Pool data = 1;
+}
+
+message Pool {
+  string address = 1;
+
+  string token_mint_a = 2;
+  string token_vault_a = 3;
+  
+  string token_mint_b = 4;
+  string token_vault_b = 5;
+
+  int64 created_timestamp = 6;
+  uint64 created_block_number = 7;
+}
+
+message Deposits {
+  repeated Deposit data = 1;
+}
+
+message Deposit {
+  string id = 1;
+
+  string token_a = 2;
+  string token_b = 3;
+
+  string token_a_balance = 4;
+  string token_b_balance = 5;
+
+  string amount_a = 6;
+  string amount_b = 7;
+
+  string output_amount = 8;
+
+  string to = 9;
+  string from = 10;
+
+  uint64 slot = 100;
+  string txn_id = 101;
+  uint64 block_height = 102;
+  int64 block_timestamp = 103;
+  string block_hash = 104;
+}
+
+message Withdraws {
+  repeated Withdraw data = 1;
+}
+
+message Withdraw {
+  string id = 1;
+
+  string token_a = 2;
+  string token_b = 3; 
+
+  string token_a_balance = 4;
+  string token_b_balance = 5;
+
+  string amount_a = 6;
+  string amount_b = 7;
+
+  string output_amount = 8;
+  
+  string to = 9;
+  string from = 10;
+
+  uint64 slot = 100;
+  string txn_id = 101;
+  uint64 block_height = 102;
+  int64 block_timestamp = 103;
+  string block_hash = 104;
+}
+
+message Swaps {
+  repeated Swap data = 1;
+}
+
+message Swap {
+  string id = 1;
+
+  string amount_in = 2;
+  string amount_out = 3;
+  
+  string token_in_balance = 4;
+  string token_out_balance = 5;
+
+  string token_in = 6;
+  string token_out = 7;
+
+  string to = 8;
+  string from = 9;
+
+  uint64 slot = 100;
+  string txn_id = 101;
+  uint64 block_height = 102;
+  int64 block_timestamp = 103;
+  string block_hash = 104;
+}
+
 message Events {
   repeated Event data = 1;
 }
 
 message Event {
   oneof type {
-    InitializePool initalize_pool = 10;
+    InitializePool initialize_pool = 10;
+    InitializePoolV2 initialize_pool_v2 = 11;
     IncreaseLiquidity increase_liquidity = 20;
     DecreaseLiquidity decrease_liquidity = 30;
     TwoHopSwap two_hop_swap = 40;
-    Swap swap = 50;
+    OrcaSwap swap = 50;
   }
 
   uint64 slot = 100;
@@ -22,44 +122,17 @@ message Event {
   string block_hash = 104;
 }
 
-message Swap {
-  SwapInstruction instruction = 1;
-  SwapInstructionAccounts accounts = 2;
-
-  message SwapInstruction {
-      uint64 amount = 1;
-      uint64 other_amount_threshold = 2;
-      string sqrt_price_limit = 3;
-      bool amount_specified_is_input = 4;
-      bool a_to_b = 5;
-  }
-
-  message SwapInstructionAccounts {
-    string token_program = 1;
-    string token_authority = 2;
-    string whirlpool = 3;
-    string token_owner_account_a = 4;
-    string token_vault_a = 5;
-    string token_owner_account_b = 6;
-    string token_vault_b = 7;
-    string tick_array_0 = 8;
-    string tick_array_1 = 9;
-    string tick_array_2 = 10;
-    string oracle = 11;
-  }
-}
-
 message InitializePool {
-  InitializePoolInstruction instruction = 1;
-  InitializePoolInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message InitializePoolInstruction {
+  message Instruction {
     uint32 bumps = 1;
     uint32 tick_spacing = 2;
     string initial_sqrt_price = 3;
   }
 
-  message InitializePoolInstructionAccounts {
+  message Accounts {
     string whirlpools_config = 1;
     string token_mint_a = 2;
     string token_mint_b = 3;
@@ -74,17 +147,51 @@ message InitializePool {
   }
 }
 
-message IncreaseLiquidity {
-  IncreaseLiquidityInstruction instruction = 1;
-  IncreaseLiquidityInstructionAccounts accounts = 2;
+message InitializePoolV2 {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message IncreaseLiquidityInstruction {
-      string liquidity_amount = 1;
-      uint64 token_max_a = 2;
-      uint64 token_max_b = 3;
+  message Instruction {
+    uint32 tick_spacing = 1;
+    string initial_sqrt_price = 2;
   }
 
-  message IncreaseLiquidityInstructionAccounts {
+  message Accounts {
+    string whirlpools_config = 1;
+    string token_mint_a = 2;
+    string token_mint_b = 3;
+    string funder = 4;
+    string whirlpool = 5;
+    string token_vault_a = 6;
+    string token_vault_b = 7;
+    string fee_tier = 8;
+    string token_program_a = 9;
+    string token_program_b = 10;
+    string system_program = 11;
+    string rent = 12;
+  }
+}
+
+message IncreaseLiquidity {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+      string liquidity_amount = 1;
+      
+      string token_max_a = 2;
+      string token_max_b = 3;
+
+      optional string amount_a = 4;
+      optional string amount_a_pre = 5;
+      optional string amount_a_post = 6;
+
+      optional string amount_b = 7;
+      optional string amount_b_pre = 8;
+      optional string amount_b_post = 9;
+  }
+
+  message Accounts {
     string whirlpool = 1;
     string token_program = 2;
     string position_authority = 3;
@@ -100,16 +207,26 @@ message IncreaseLiquidity {
 }
 
 message DecreaseLiquidity {
-  DecreaseLiquidityInstruction instruction = 1;
-  DecreaseLiquidityInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message DecreaseLiquidityInstruction {
+  message Instruction {
       string liquidity_amount = 1;
-      uint64 token_min_a = 2;
-      uint64 token_min_b = 3;
+      
+      string token_min_a = 2;
+      string token_min_b = 3;
+      
+      optional string amount_a = 4;
+      optional string amount_a_pre = 5;
+      optional string amount_a_post = 6;
+
+      optional string amount_b = 7;
+      optional string amount_b_pre = 8;
+      optional string amount_b_post = 9;
+
   }
 
-  message DecreaseLiquidityInstructionAccounts {
+  message Accounts {
     string whirlpool = 1;
     string token_program = 2;
     string position_authority = 3;
@@ -125,20 +242,41 @@ message DecreaseLiquidity {
 }
 
 message TwoHopSwap {
-  TwoHopSwapInstruction instruction = 1;
-  TwoHopSwapInstructionAccounts accounts = 2;
+  Instruction instruction = 1;
+  Accounts accounts = 2;
 
-  message TwoHopSwapInstruction {
-    uint64 amount = 1;
-    uint64 other_amount_threshold = 2;
-    bool amount_specified_is_input = 3;
-    bool a_to_b_one = 4;
-    bool a_to_b_two = 5;
-    string sqrt_price_limit_one = 6;
-    string sqrt_price_limit_two = 7;
+  message Instruction {
+    string amount = 1;
+    
+    optional string amount_a_one = 2;
+    optional string amount_b_one = 3;
+
+    optional string amount_a_one_pre = 4;
+    optional string amount_a_one_post = 5;
+
+    optional string amount_b_one_pre = 6;
+    optional string amount_b_one_post = 7;
+    
+    optional string amount_a_two = 8;
+    optional string amount_b_two = 9;
+
+    optional string amount_a_two_pre = 10;
+    optional string amount_a_two_post = 11;
+
+    optional string amount_b_two_pre = 12;
+    optional string amount_b_two_post = 13;
+
+    string other_amount_threshold = 14;
+    
+    bool amount_specified_is_input = 15;
+    bool a_to_b_one = 16;
+    bool a_to_b_two = 17;
+    
+    string sqrt_price_limit_one = 18;
+    string sqrt_price_limit_two = 19;
   }
 
-  message TwoHopSwapInstructionAccounts {
+  message Accounts {
     string token_program = 1;
     string token_authority = 2;
     string whirlpool_one = 3;
@@ -159,5 +297,43 @@ message TwoHopSwap {
     string tick_array_two2 = 18;
     string oracle_one = 19;
     string oracle_two = 20;
+  }
+}
+
+message OrcaSwap {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+    string amount = 1;
+    
+    optional string amount_a_pre = 2;
+    optional string amount_a_post = 3;
+
+    optional string amount_b_pre = 4;
+    optional string amount_b_post = 5;
+
+    optional string amount_a = 6;
+    optional string amount_b = 7;
+    
+    string other_amount_threshold = 8;
+    string sqrt_price_limit = 9;
+    
+    bool amount_specified_is_input = 10;
+    bool a_to_b = 11;
+  }
+
+  message Accounts {
+    string token_program = 1;
+    string token_authority = 2;
+    string whirlpool = 3;
+    string token_owner_account_a = 4;
+    string token_vault_a = 5;
+    string token_owner_account_b = 6;
+    string token_vault_b = 7;
+    string tick_array_0 = 8;
+    string tick_array_1 = 9;
+    string tick_array_2 = 10;
+    string oracle = 11;
   }
 }

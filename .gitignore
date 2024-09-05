@@ -24,9 +24,9 @@ Cargo.lock
 **/data/
 **/*.spkg
 *.spkg
-/sink
-/debug.log
-/replay.log
+**/sink
+**/debug.log
+**/replay.log
 
 # Miscellaneous
 *~
