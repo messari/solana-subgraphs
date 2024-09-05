@@ -9,7 +9,7 @@ pub fn map_pools(raw_events: Events) -> Result<Pools, substreams::errors::Error>
         .data
         .into_iter()
         .filter_map(|event| match event.r#type {
-            Some(event::Type::InitalizePool(initialize_pool_event)) => {
+            Some(event::Type::InitializePool(initialize_pool_event)) => {
                 let accounts = initialize_pool_event.accounts.unwrap();
                 Some(Pool {
                     address: accounts.whirlpool,
@@ -21,7 +21,7 @@ pub fn map_pools(raw_events: Events) -> Result<Pools, substreams::errors::Error>
                     created_block_number: event.block_height,
                 })
             }
-            Some(event::Type::InitalizePoolV2(initialize_pool_v2_event)) => {
+            Some(event::Type::InitializePoolV2(initialize_pool_v2_event)) => {
                 let accounts = initialize_pool_v2_event.accounts.unwrap();
                 Some(Pool {
                     address: accounts.whirlpool,

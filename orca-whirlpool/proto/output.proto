@@ -107,7 +107,8 @@ message Events {
 
 message Event {
   oneof type {
-    InitializePool initalize_pool = 10;
+    InitializePool initialize_pool = 10;
+    InitializePoolV2 initialize_pool_v2 = 11;
     IncreaseLiquidity increase_liquidity = 20;
     DecreaseLiquidity decrease_liquidity = 30;
     TwoHopSwap two_hop_swap = 40;

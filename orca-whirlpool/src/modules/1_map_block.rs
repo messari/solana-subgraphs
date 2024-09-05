@@ -91,7 +91,7 @@ fn process_initialize_pool(
     data: InitializePoolInstruction,
     input_accounts: InitializePoolInstructionAccounts,
 ) -> Option<Type> {
-    Some(Type::InitalizePool(InitializePool {
+    Some(Type::InitializePool(InitializePool {
         instruction: Some(initialize_pool::Instruction {
             bumps: data.bumps.whirlpool_bump as u32,
             tick_spacing: data.tick_spacing as u32,
@@ -117,7 +117,7 @@ fn process_initialize_pool_v2(
     data: InitializePoolInstructionV2,
     input_accounts: InitializePoolInstructionAccountsV2,
 ) -> Option<Type> {
-    Some(Type::InitalizePoolV2(InitializePoolV2 {
+    Some(Type::InitializePoolV2(InitializePoolV2 {
         instruction: Some(initialize_pool_v2::Instruction {
             tick_spacing: data.tick_spacing as u32,
             initial_sqrt_price: data.initial_sqrt_price.to_string(),
