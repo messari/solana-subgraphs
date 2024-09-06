@@ -23,7 +23,7 @@ fn graph_out(
     skip_empty_output();
 
     let mut tables = Tables::new();
-    let is_initialized = clock.number != 124152351;
+    let is_initialized = clock.number != 124280237;
     let protocol_id = bs58::encode(constants::ORCA_WHIRLPOOL).into_string();
 
     db::handle_protocol_entity(
