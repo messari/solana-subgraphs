@@ -15,11 +15,12 @@ impl DiscriminatorConstants {
     // V2
     pub const INITIALIZE_POOL_V2: [u8; 8] = [207, 45, 87, 242, 27, 63, 204, 67];
 
-    // TODO: Add these v2 instructions
-    pub const _DECREASE_LIQUIDITY_V2: [u8; 8] = [58, 127, 188, 62, 79, 82, 196, 96];
-    pub const _INCREASE_LIQUIDITY_V2: [u8; 8] = [133, 29, 89, 223, 69, 238, 176, 10];
-    pub const _TWO_HOP_SWAP_V2: [u8; 8] = [186, 143, 209, 29, 254, 2, 194, 117];
-    pub const _SWAP_V2: [u8; 8] = [43, 4, 237, 11, 26, 201, 30, 98];
+    pub const DECREASE_LIQUIDITY_V2: [u8; 8] = [58, 127, 188, 62, 79, 82, 196, 96];
+    pub const INCREASE_LIQUIDITY_V2: [u8; 8] = [133, 29, 89, 223, 69, 238, 176, 10];
+
+    pub const TWO_HOP_SWAP_V2: [u8; 8] = [186, 143, 209, 29, 254, 2, 194, 117];
+    pub const SWAP_V2: [u8; 8] = [43, 4, 237, 11, 26, 201, 30, 98];
 }
 
+pub const ZERO_STRING: &str = "0";
 pub const ORCA_WHIRLPOOL: [u8; 32] = b58!("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc");

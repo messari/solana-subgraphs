@@ -1,5 +1,5 @@
 use crate::pb::messari::orca_whirlpool::v1::event::Type;
-use crate::pb::messari::orca_whirlpool::v1::{orca_swap, OrcaSwap};
+use crate::pb::messari::orca_whirlpool::v1::{orca_swap_v2, OrcaSwapV2};
 use crate::traits::account_deserialize::AccountsDeserialize;
 use crate::traits::balance_of::BalanceOf;
 use crate::utils;
@@ -10,8 +10,10 @@ use substreams_solana::block_view::InstructionView;
 use substreams_solana::pb::sf::solana::r#type::v1::ConfirmedTransaction;
 use substreams_solana::Address;
 
+use super::utils::RemainingAccountsInfo;
+
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct SwapInstruction {
+pub struct SwapInstructionV2 {
     // The amount of input or output token to swap from (depending on amount_specified_is_input).
     pub amount: u64,
     // The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).
@@ -22,13 +24,19 @@ pub struct SwapInstruction {
     pub amount_specified_is_input: bool,
     // The direction of the swap. True if swapping from A to B. False if swapping from B to A.
     pub a_to_b: bool,
+    // The remaining accounts info.
+    pub remaining_accounts_info: Option<RemainingAccountsInfo>,
 }
 
 #[derive(AccountsDeserialize, Debug)]
-pub struct SwapInstructionAccounts<'a> {
-    pub token_program: Address<'a>,
+pub struct SwapInstructionAccountsV2<'a> {
+    pub token_program_a: Address<'a>,
+    pub token_program_b: Address<'a>,
+    pub memo_program: Address<'a>,
     pub token_authority: Address<'a>,
     pub whirlpool: Address<'a>,
+    pub token_mint_a: Address<'a>,
+    pub token_mint_b: Address<'a>,
     pub token_owner_account_a: Address<'a>,
     pub token_vault_a: Address<'a>,
     pub token_owner_account_b: Address<'a>,
@@ -39,9 +47,9 @@ pub struct SwapInstructionAccounts<'a> {
     pub oracle: Address<'a>,
 }
 
-pub fn process_swap(
-    data: SwapInstruction,
-    input_accounts: SwapInstructionAccounts,
+pub fn process_swap_v2(
+    data: SwapInstructionV2,
+    input_accounts: SwapInstructionAccountsV2,
     confirmed_txn: &ConfirmedTransaction,
 ) -> Option<Type> {
     let (token_a_pre_bal, token_a_post_bal) =
@@ -49,8 +57,8 @@ pub fn process_swap(
     let (token_b_pre_bal, token_b_post_bal) =
         confirmed_txn.balance_of(&input_accounts.whirlpool, &input_accounts.token_vault_b);
 
-    Some(Type::Swap(OrcaSwap {
-        instruction: Some(orca_swap::Instruction {
+    Some(Type::SwapV2(OrcaSwapV2 {
+        instruction: Some(orca_swap_v2::Instruction {
             amount: data.amount.to_string(),
 
             amount_a: utils::balance_difference(token_a_pre_bal.clone(), token_a_post_bal.clone()),
@@ -67,10 +75,14 @@ pub fn process_swap(
             amount_specified_is_input: data.amount_specified_is_input,
             a_to_b: data.a_to_b,
         }),
-        accounts: Some(orca_swap::Accounts {
-            token_program: input_accounts.token_program.to_string(),
+        accounts: Some(orca_swap_v2::Accounts {
+            token_program_a: input_accounts.token_program_a.to_string(),
+            token_program_b: input_accounts.token_program_b.to_string(),
+            memo_program: input_accounts.memo_program.to_string(),
             token_authority: input_accounts.token_authority.to_string(),
             whirlpool: input_accounts.whirlpool.to_string(),
+            token_mint_a: input_accounts.token_mint_a.to_string(),
+            token_mint_b: input_accounts.token_mint_b.to_string(),
             token_owner_account_a: input_accounts.token_owner_account_a.to_string(),
             token_vault_a: input_accounts.token_vault_a.to_string(),
             token_owner_account_b: input_accounts.token_owner_account_b.to_string(),

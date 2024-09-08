@@ -1,5 +1,6 @@
 use crate::key_store::StoreKey;
 use crate::pb::messari::orca_whirlpool::v1::{event::Type, Event, Events, Pool, Swap, Swaps};
+use crate::traits::swap_instructions::SwapInstruction;
 use substreams::log;
 use substreams::{
     skip_empty_output,
@@ -13,108 +14,74 @@ pub fn map_swaps(
 ) -> Result<Swaps, substreams::errors::Error> {
     skip_empty_output();
 
-    let zero = "0".to_string();
     let mut swaps: Vec<Swap> = Vec::new();
 
     for event in raw_events.data {
         if let Some(event_type) = event.r#type.clone() {
             match event_type {
                 Type::TwoHopSwap(two_hop_swap_event) => {
-                    if let (Some(instruction), Some(accounts)) =
-                        (two_hop_swap_event.instruction, two_hop_swap_event.accounts)
-                    {
-                        let swap_a_to_b_one = handle_swap(
-                            instruction.a_to_b_one,
-                            instruction
-                                .amount_a_one
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_b_one
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_a_one_post
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_b_one_post
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            accounts.token_authority.clone(),
-                            accounts.whirlpool_one.clone(),
-                            &pool_store,
-                            event.clone(),
-                        );
-
-                        let swap_a_to_b_two = handle_swap(
-                            instruction.a_to_b_two,
-                            instruction
-                                .amount_a_two
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_b_two
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_a_two_post
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_b_two_post
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            accounts.token_authority,
-                            accounts.whirlpool_two,
-                            &pool_store,
-                            event,
-                        );
-
-                        if let Some(swap) = swap_a_to_b_one {
-                            swaps.push(swap);
-                        }
-
-                        if let Some(swap) = swap_a_to_b_two {
-                            swaps.push(swap);
-                        }
-                    }
+                    process_swap(&two_hop_swap_event, &pool_store, &event, &mut swaps);
                 }
-
+                Type::TwoHopSwapV2(two_hop_swap_v2_event) => {
+                    process_swap(&two_hop_swap_v2_event, &pool_store, &event, &mut swaps);
+                }
                 Type::Swap(orca_swap_event) => {
-                    if let (Some(instruction), Some(accounts)) =
-                        (orca_swap_event.instruction, orca_swap_event.accounts)
-                    {
-                        let swap_a_to_b = handle_swap(
-                            instruction.a_to_b,
-                            instruction.amount_a.clone().unwrap_or_else(|| zero.clone()),
-                            instruction.amount_b.clone().unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_a_post
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            instruction
-                                .amount_b_post
-                                .clone()
-                                .unwrap_or_else(|| zero.clone()),
-                            accounts.token_authority,
-                            accounts.whirlpool,
-                            &pool_store,
-                            event,
-                        );
-
-                        if let Some(swap) = swap_a_to_b {
-                            swaps.push(swap);
-                        }
-                    }
+                    process_swap(&orca_swap_event, &pool_store, &event, &mut swaps);
                 }
-
+                Type::SwapV2(orca_swap_v2_event) => {
+                    process_swap(&orca_swap_v2_event, &pool_store, &event, &mut swaps);
+                }
                 _ => {}
             }
         }
     }
 
     Ok(Swaps { data: swaps })
+}
+
+fn process_swap<T: SwapInstruction>(
+    swap_event: &T,
+    pool_store: &StoreGetProto<Pool>,
+    event: &Event,
+    swaps: &mut Vec<Swap>,
+) {
+    log::info!("Processing swap: {:?}", event.txn_id);
+
+    let swap = handle_swap(
+        swap_event.a_to_b(),
+        swap_event.amount_a(),
+        swap_event.amount_b(),
+        swap_event.amount_a_post(),
+        swap_event.amount_b_post(),
+        swap_event.token_authority(),
+        swap_event.whirlpool(),
+        pool_store,
+        event.clone(),
+    );
+
+    if let Some(swap) = swap {
+        swaps.push(swap);
+    }
+
+    if swap_event.is_two_hop() {
+        if let Some(second_hop) = swap_event.second_hop() {
+            let second_swap = handle_swap(
+                second_hop.a_to_b(),
+                second_hop.amount_a(),
+                second_hop.amount_b(),
+                second_hop.amount_a_post(),
+                second_hop.amount_b_post(),
+                second_hop.token_authority(),
+                second_hop.whirlpool(),
+                pool_store,
+                event.clone(),
+            );
+
+            if let Some(second_swap) = second_swap {
+                swaps.push(second_swap);
+            }
+        }
+    }
 }
 
 fn handle_swap(
@@ -128,14 +95,13 @@ fn handle_swap(
     pool_store: &StoreGetProto<Pool>,
     event: Event,
 ) -> Option<Swap> {
-    let pool = pool_store.get_last(StoreKey::Pool.get_unique_key(&pool_address));
-
-    if pool.is_none() {
-        log::info!("Pool not found: {:?}", pool_address);
-        return None;
-    }
-
-    let pool = pool.unwrap();
+    let pool = match pool_store.get_last(StoreKey::Pool.get_unique_key(&pool_address)) {
+        Some(pool) => pool,
+        None => {
+            log::info!("Pool not found: {:?}", pool_address);
+            return None;
+        }
+    };
 
     let (token_in, amount_in, token_in_balance, token_out, amount_out, token_out_balance) =
         if a_to_b {

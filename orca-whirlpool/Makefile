@@ -6,11 +6,11 @@ build:
 
 .PHONY: stream
 stream: build
-	substreams run -e $(ENDPOINT) substreams.yaml map_pools -s 124288454 -t +1000
+	substreams run -e $(ENDPOINT) substreams.yaml map_swaps -s 126272128 -t +1
 
 .PHONY: gui
 gui: build
-	substreams gui substreams.yaml graph_out -s 124152351 --production-mode
+	substreams gui substreams.yaml map_swaps -s 126272128 -t +1 --production-mode
 
 .PHONY: protogen
 protogen:

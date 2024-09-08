@@ -1,6 +1,7 @@
 use crate::{
     key_store::StoreKey,
-    pb::messari::orca_whirlpool::v1::{event::Type, Events, Pool, Withdraw, Withdraws},
+    pb::messari::orca_whirlpool::v1::{event::Type, Event, Events, Pool, Withdraw, Withdraws},
+    traits::withdraw_instructions::WithdrawInstruction,
 };
 use substreams::{
     log, skip_empty_output,
@@ -13,56 +14,61 @@ pub fn map_withdraws(
     pools_store: StoreGetProto<Pool>,
 ) -> Result<Withdraws, substreams::errors::Error> {
     skip_empty_output();
+    let mut withdraws: Vec<Withdraw> = Vec::new();
 
-    let zero = "0".to_string();
-
-    let data: Vec<Withdraw> = raw_events
-        .data
-        .into_iter()
-        .filter_map(|event| {
-            if let Some(Type::DecreaseLiquidity(decrease_liquidity_event)) = event.r#type {
-                let id = format!("{}-{}", event.txn_id, event.slot);
-
-                let accounts = decrease_liquidity_event.accounts?;
-                let instruction = decrease_liquidity_event.instruction?;
-
-                let pool = pools_store.get_last(StoreKey::Pool.get_unique_key(&accounts.whirlpool));
-
-                if pool.is_none() {
-                    log::info!("Pool not found: {:?}", accounts.whirlpool);
-                    return None;
+    raw_events.data.into_iter().for_each(|event| {
+        if let Some(event_type) = event.r#type.clone() {
+            match event_type {
+                Type::DecreaseLiquidity(instruction) => {
+                    process_withdraw(&instruction, &pools_store, &event, &mut withdraws);
                 }
-
-                let pool = pool.unwrap();
-
-                Some(Withdraw {
-                    id,
-
-                    token_a: pool.token_mint_a,
-                    token_b: pool.token_mint_b,
-
-                    token_a_balance: instruction.amount_a_post.unwrap_or_else(|| zero.clone()),
-                    token_b_balance: instruction.amount_b_post.unwrap_or_else(|| zero.clone()),
-
-                    amount_a: instruction.amount_a.unwrap_or_else(|| zero.clone()),
-                    amount_b: instruction.amount_b.unwrap_or_else(|| zero.clone()),
-
-                    output_amount: instruction.liquidity_amount,
-
-                    from: accounts.position_authority,
-                    to: accounts.whirlpool,
-
-                    slot: event.slot,
-                    txn_id: event.txn_id,
-                    block_height: event.block_height,
-                    block_timestamp: event.block_timestamp,
-                    block_hash: event.block_hash,
-                })
-            } else {
-                None
+                Type::DecreaseLiquidityV2(instruction) => {
+                    process_withdraw(&instruction, &pools_store, &event, &mut withdraws);
+                }
+                _ => {}
             }
-        })
-        .collect();
+        }
+    });
 
-    Ok(Withdraws { data })
+    Ok(Withdraws { data: withdraws })
+}
+
+fn process_withdraw<T: WithdrawInstruction>(
+    withdraw_event: &T,
+    pool_store: &StoreGetProto<Pool>,
+    event: &Event,
+    withdraws: &mut Vec<Withdraw>,
+) {
+    let pool = match pool_store.get_last(StoreKey::Pool.get_unique_key(&withdraw_event.whirlpool()))
+    {
+        Some(pool) => pool,
+        None => {
+            log::info!("Pool not found: {:?}", withdraw_event.whirlpool());
+            return;
+        }
+    };
+
+    withdraws.push(Withdraw {
+        id: format!("{}-{}", event.txn_id.clone(), event.slot),
+
+        token_a: pool.token_mint_a,
+        token_b: pool.token_mint_b,
+
+        token_a_balance: withdraw_event.amount_a_post(),
+        token_b_balance: withdraw_event.amount_b_post(),
+
+        amount_a: withdraw_event.amount_a(),
+        amount_b: withdraw_event.amount_b(),
+
+        output_amount: withdraw_event.liquidity_amount(),
+
+        from: withdraw_event.position_authority(),
+        to: withdraw_event.whirlpool(),
+
+        slot: event.slot,
+        txn_id: event.txn_id.clone(),
+        block_height: event.block_height,
+        block_timestamp: event.block_timestamp,
+        block_hash: event.block_hash.clone(),
+    });
 }

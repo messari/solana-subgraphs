@@ -1,6 +1,7 @@
 use crate::{
     key_store::StoreKey,
-    pb::messari::orca_whirlpool::v1::{event::Type, Deposit, Deposits, Events, Pool},
+    pb::messari::orca_whirlpool::v1::{event::Type, Deposit, Deposits, Event, Events, Pool},
+    traits::deposit_instructions::DepositInstruction,
 };
 use substreams::{
     log, skip_empty_output,
@@ -13,56 +14,61 @@ pub fn map_deposits(
     pools_store: StoreGetProto<Pool>,
 ) -> Result<Deposits, substreams::errors::Error> {
     skip_empty_output();
+    let mut deposits: Vec<Deposit> = Vec::new();
 
-    let zero = "0".to_string();
-
-    let data: Vec<Deposit> = raw_events
-        .data
-        .into_iter()
-        .filter_map(|event| {
-            if let Some(Type::IncreaseLiquidity(increase_liquidity_event)) = event.r#type {
-                let id = format!("{}-{}", event.txn_id, event.slot);
-
-                let accounts = increase_liquidity_event.accounts?;
-                let instruction = increase_liquidity_event.instruction?;
-
-                let pool = pools_store.get_last(StoreKey::Pool.get_unique_key(&accounts.whirlpool));
-
-                if pool.is_none() {
-                    log::info!("Pool not found: {:?}", accounts.whirlpool);
-                    return None;
+    for event in raw_events.data {
+        if let Some(event_type) = event.r#type.clone() {
+            match event_type {
+                Type::IncreaseLiquidity(instruction) => {
+                    process_deposit(&instruction, &pools_store, &event, &mut deposits);
                 }
-
-                let pool = pool.unwrap();
-
-                Some(Deposit {
-                    id,
-
-                    token_a: pool.token_mint_a,
-                    token_b: pool.token_mint_b,
-
-                    token_a_balance: instruction.amount_a_post.unwrap_or_else(|| zero.clone()),
-                    token_b_balance: instruction.amount_b_post.unwrap_or_else(|| zero.clone()),
-
-                    amount_a: instruction.amount_a.unwrap_or_else(|| zero.clone()),
-                    amount_b: instruction.amount_b.unwrap_or_else(|| zero.clone()),
-
-                    output_amount: instruction.liquidity_amount,
-
-                    from: accounts.position_authority,
-                    to: accounts.whirlpool,
-
-                    slot: event.slot,
-                    txn_id: event.txn_id,
-                    block_height: event.block_height,
-                    block_timestamp: event.block_timestamp,
-                    block_hash: event.block_hash,
-                })
-            } else {
-                None
+                Type::IncreaseLiquidityV2(instruction) => {
+                    process_deposit(&instruction, &pools_store, &event, &mut deposits);
+                }
+                _ => {}
             }
-        })
-        .collect();
+        }
+    }
 
-    Ok(Deposits { data })
+    Ok(Deposits { data: deposits })
+}
+
+fn process_deposit<T: DepositInstruction>(
+    deposit_event: &T,
+    pool_store: &StoreGetProto<Pool>,
+    event: &Event,
+    deposits: &mut Vec<Deposit>,
+) {
+    let pool = match pool_store.get_last(StoreKey::Pool.get_unique_key(&deposit_event.whirlpool()))
+    {
+        Some(pool) => pool,
+        None => {
+            log::info!("Pool not found: {:?}", deposit_event.whirlpool());
+            return;
+        }
+    };
+
+    deposits.push(Deposit {
+        id: format!("{}-{}", event.txn_id, event.slot),
+
+        token_a: pool.token_mint_a,
+        token_b: pool.token_mint_b,
+
+        token_a_balance: deposit_event.amount_a_post(),
+        token_b_balance: deposit_event.amount_b_post(),
+
+        amount_a: deposit_event.amount_a(),
+        amount_b: deposit_event.amount_b(),
+
+        output_amount: deposit_event.liquidity_amount(),
+
+        from: deposit_event.position_authority(),
+        to: deposit_event.whirlpool(),
+
+        slot: event.slot,
+        txn_id: event.txn_id.clone(),
+        block_height: event.block_height,
+        block_timestamp: event.block_timestamp,
+        block_hash: event.block_hash.clone(),
+    })
 }
