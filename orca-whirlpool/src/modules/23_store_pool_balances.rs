@@ -60,6 +60,22 @@ pub fn store_pool_balances(
     });
 }
 
+/// Processes pool balances for a given set of items.
+///
+/// This function takes a collection of items, a store to update, and a closure that extracts
+/// balance information from each item. It then updates the store with the extracted balance
+/// information for each pool and token combination.
+///
+/// # Arguments
+///
+/// * `items` - A slice of items to process
+/// * `store` - The store to update with balance information
+/// * `f` - A closure that takes an item and returns a vector of (pool, token, balance) tuples
+///
+/// # Type Parameters
+///
+/// * `T` - The type of items being processed
+/// * `F` - The type of the closure for extracting balance information
 fn process_pool_balances<T, F>(items: &[T], store: &StoreSetBigInt, f: F)
 where
     F: Fn(&T) -> Vec<(String, String, String)>,
