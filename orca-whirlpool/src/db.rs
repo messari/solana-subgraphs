@@ -87,7 +87,7 @@ pub fn handle_usage_metrics_daily_snapshot_entity(
                 let bigint0 = BigInt::zero();
 
                 tables
-                    .create_row("UsageMetricsDailySnapshot", day_id.to_string())
+                    .update_row("UsageMetricsDailySnapshot", day_id.to_string())
                     .set("protocol", protocol_id)
                     .set("dailyActiveUsers", &bigint0)
                     .set("cumulativeUniqueUsers", &bigint0)
@@ -122,7 +122,7 @@ pub fn handle_usage_metrics_daily_snapshot_entity(
 pub fn handle_pool_entity(
     tables: &mut Tables,
     initialized_pools: Pools,
-    pools_store: &StoreGetProto<Pool>,
+    pool_store: &StoreGetProto<Pool>,
     pool_balances_delta: &Deltas<DeltaBigInt>,
     pool_liquidity_delta: &Deltas<DeltaBigInt>,
     protocol_id: &String,
@@ -154,14 +154,13 @@ pub fn handle_pool_entity(
             let pool_address = key::segment_at(&delta.key, 1);
             let input_token = key::segment_at(&delta.key, 2);
 
-            let pool = pools_store.get_last(StoreKey::Pool.get_unique_key(pool_address));
-
-            if pool.is_none() {
-                log::info!("Pool not found: {pool_address}");
-                return;
-            }
-
-            let pool = pool.unwrap();
+            let pool = match pool_store.get_last(StoreKey::Pool.get_unique_key(pool_address)) {
+                Some(pool) => pool,
+                None => {
+                    log::info!("Pool not found: {:?}", pool_address);
+                    return;
+                }
+            };
 
             let balance_field = if input_token == pool.token_mint_a {
                 "token0Balance"
@@ -208,14 +207,14 @@ pub fn handle_liquidity_pool_daily_snapshot_entity(
             let day_id = key::segment_at(&delta.key, 1);
             let pool_address = key::segment_at(&delta.key, 3);
             let token_address = key::segment_at(&delta.key, 4);
-            let pool = pool_store.get_last(StoreKey::Pool.get_unique_key(pool_address));
 
-            if pool.is_none() {
-                log::info!("Pool not found: {pool_address}");
-                return;
-            }
-
-            let pool = pool.unwrap();
+            let pool = match pool_store.get_last(StoreKey::Pool.get_unique_key(pool_address)) {
+                Some(pool) => pool,
+                None => {
+                    log::info!("Pool not found: {:?}", pool_address);
+                    return;
+                }
+            };
 
             if delta.old_value == BigInt::zero() {
                 tables
