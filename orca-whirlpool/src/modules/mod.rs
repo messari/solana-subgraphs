@@ -40,5 +40,11 @@ pub mod store_pool_balances;
 #[path = "24_store_pool_liquidity.rs"]
 pub mod store_pool_liquidity;
 
+#[path = "25_store_activity_counts.rs"]
+pub mod store_activity_counts;
+
+#[path = "26_store_volume_by_token_amount.rs"]
+pub mod store_volume_by_token_amount;
+
 #[path = "100_graph_out.rs"]
 pub mod graph_out;

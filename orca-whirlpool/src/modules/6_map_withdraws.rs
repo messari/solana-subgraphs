@@ -32,6 +32,7 @@ pub fn map_withdraws(
                     log::info!("Pool not found: {:?}", accounts.whirlpool);
                     return None;
                 }
+
                 let pool = pool.unwrap();
 
                 Some(Withdraw {

@@ -5,8 +5,12 @@ use crate::{
 
 use substreams::{
     key, log,
+    pb::substreams::store_delta::Operation,
     scalar::{BigDecimal, BigInt},
-    store::{DeltaBigInt, DeltaExt, DeltaInt64, Deltas, StoreGet, StoreGetProto},
+    store::{
+        DeltaBigInt, DeltaExt, DeltaInt64, Deltas, StoreGet, StoreGetBigInt, StoreGetInt64,
+        StoreGetProto,
+    },
 };
 use substreams_entity_change::tables::Tables;
 
@@ -42,17 +46,90 @@ pub fn handle_protocol_entity(
     });
 }
 
+pub fn handle_usage_metrics_daily_snapshot_entity(
+    tables: &mut Tables,
+    active_users_store: StoreGetInt64,
+    total_pool_count_store: StoreGetInt64,
+    user_activity_deltas: &Deltas<DeltaBigInt>,
+    protocol_id: &String,
+    block_number: &BigInt,
+    timestamp: &BigInt,
+) {
+    let total_pool_count = total_pool_count_store
+        .get_last(StoreKey::TotalPoolCount.unique_id())
+        .unwrap_or_default();
+    let cumulative_users_count = active_users_store
+        .get_last(StoreKey::CumulativeUsers.unique_id())
+        .unwrap_or_default();
+
+    user_activity_deltas
+        .iter()
+        .key_first_segment_eq("UsageMetricsDailySnapshot")
+        .operation_not_eq(Operation::Delete)
+        .for_each(|delta| {
+            let day_id = key::segment_at(&delta.key, 1)
+                .parse::<i64>()
+                .unwrap_or_default();
+            let field_id = key::segment_at(&delta.key, 2);
+
+            let active_users_count = active_users_store
+                .get_last(
+                    StoreKey::UsageMetricsDailySnapshot(
+                        day_id,
+                        Some(Box::new(StoreKey::ActiveUsers)),
+                    )
+                    .get_snapshot_key(None),
+                )
+                .unwrap_or_default();
+
+            if field_id == StoreKey::TxnCount.unique_id() && delta.new_value == BigInt::one() {
+                // Create a new daily snapshot
+                let bigint0 = BigInt::zero();
+
+                tables
+                    .create_row("UsageMetricsDailySnapshot", day_id.to_string())
+                    .set("protocol", protocol_id)
+                    .set("dailyActiveUsers", &bigint0)
+                    .set("cumulativeUniqueUsers", &bigint0)
+                    .set("dailyTransactionCount", &bigint0)
+                    .set("dailyDepositCount", &bigint0)
+                    .set("dailyWithdrawCount", &bigint0)
+                    .set("dailySwapCount", &bigint0)
+                    .set("totalPoolCount", total_pool_count)
+                    .set("blockNumber", block_number)
+                    .set("timestamp", timestamp);
+            }
+
+            let field = match field_id {
+                x if x == StoreKey::SwapCount.unique_id() => "dailySwapCount",
+                x if x == StoreKey::DepositCount.unique_id() => "dailyDepositCount",
+                x if x == StoreKey::WithdrawCount.unique_id() => "dailyWithdrawCount",
+                x if x == StoreKey::TxnCount.unique_id() => "dailyTransactionCount",
+                _ => "",
+            };
+
+            tables
+                .update_row("UsageMetricsDailySnapshot", day_id.to_string())
+                .set("dailyActiveUsers", active_users_count)
+                .set("cumulativeUniqueUsers", cumulative_users_count)
+                .set(field, &delta.new_value)
+                .set("totalPoolCount", total_pool_count)
+                .set("blockNumber", block_number)
+                .set("timestamp", timestamp);
+        });
+}
+
 pub fn handle_pool_entity(
     tables: &mut Tables,
     initialized_pools: Pools,
-    pools_store: StoreGetProto<Pool>,
-    pool_balances_delta: Deltas<DeltaBigInt>,
-    pool_liquidity_delta: Deltas<DeltaBigInt>,
+    pools_store: &StoreGetProto<Pool>,
+    pool_balances_delta: &Deltas<DeltaBigInt>,
+    pool_liquidity_delta: &Deltas<DeltaBigInt>,
     protocol_id: &String,
 ) {
     initialized_pools.data.iter().for_each(|pool| {
         tables
-            .create_row("Pool", &pool.address)
+            .create_row("LiquidityPool", &pool.address)
             .set("protocol", protocol_id)
             .set(
                 "inputTokens",
@@ -83,6 +160,7 @@ pub fn handle_pool_entity(
                 log::info!("Pool not found: {pool_address}");
                 return;
             }
+
             let pool = pool.unwrap();
 
             let balance_field = if input_token == pool.token_mint_a {
@@ -94,7 +172,7 @@ pub fn handle_pool_entity(
             };
 
             tables
-                .update_row("Pool", pool_address)
+                .update_row("LiquidityPool", pool_address)
                 .set(balance_field, &delta.new_value);
         });
 
@@ -105,8 +183,96 @@ pub fn handle_pool_entity(
             let pool = key::segment_at(&delta.key, 1);
 
             tables
-                .update_row("Pool", pool)
+                .update_row("LiquidityPool", pool)
                 .set("outputTokenSupply", &delta.new_value);
+        });
+}
+
+pub fn handle_liquidity_pool_daily_snapshot_entity(
+    tables: &mut Tables,
+    pool_store: &StoreGetProto<Pool>,
+    pool_balances_store: &StoreGetBigInt,
+    pool_liquidity_store: &StoreGetBigInt,
+    volume_by_token_amount_deltas: &Deltas<DeltaBigInt>,
+    protocol_id: &String,
+    block_number: &BigInt,
+    timestamp: &BigInt,
+) {
+    let bigint0 = BigInt::zero();
+
+    volume_by_token_amount_deltas
+        .iter()
+        .key_first_segment_eq("PoolDailySnapshot")
+        .operation_not_eq(Operation::Delete)
+        .for_each(|delta| {
+            let day_id = key::segment_at(&delta.key, 1);
+            let pool_address = key::segment_at(&delta.key, 3);
+            let token_address = key::segment_at(&delta.key, 4);
+            let pool = pool_store.get_last(StoreKey::Pool.get_unique_key(pool_address));
+
+            if pool.is_none() {
+                log::info!("Pool not found: {pool_address}");
+                return;
+            }
+
+            let pool = pool.unwrap();
+
+            if delta.old_value == BigInt::zero() {
+                tables
+                    .update_row(
+                        "LiquidityPoolDailySnapshot",
+                        format!("{pool_address}-{day_id}"),
+                    )
+                    .set("protocol", protocol_id)
+                    .set("pool", pool_address)
+                    .set("blockNumber", block_number)
+                    .set("timestamp", timestamp)
+                    .set("dailyVolumeByToken0Amount", &bigint0)
+                    .set("dailyVolumeByToken1Amount", &bigint0)
+                    .set("token0Balances", &bigint0)
+                    .set("token1Balances", &bigint0)
+                    .set("outputTokenSupply", &bigint0);
+            }
+
+            let (volume_field, balance_field, token_balance) = if token_address == pool.token_mint_a
+            {
+                (
+                    "dailyVolumeByToken0Amount",
+                    "token0Balances",
+                    pool_balances_store
+                        .get_last(
+                            StoreKey::PoolBalance.get_unique_keys(pool_address, token_address),
+                        )
+                        .unwrap_or_default(),
+                )
+            } else if token_address == pool.token_mint_b {
+                (
+                    "dailyVolumeByToken1Amount",
+                    "token1Balances",
+                    pool_balances_store
+                        .get_last(
+                            StoreKey::PoolBalance.get_unique_keys(pool_address, token_address),
+                        )
+                        .unwrap_or_default(),
+                )
+            } else {
+                return;
+            };
+
+            let output_token_supply = pool_liquidity_store
+                .get_last(StoreKey::PoolLiquidity.get_unique_key(pool_address))
+                .unwrap_or_default();
+
+            tables
+                .update_row(
+                    "LiquidityPoolDailySnapshot",
+                    format!("{pool_address}-{day_id}"),
+                )
+                .set(volume_field, &delta.new_value)
+                .set(balance_field, &token_balance)
+                .set("outputTokenSupply", &output_token_supply)
+                .set("blockNumber", block_number)
+                .set("timestamp", timestamp);
         });
 }
 
