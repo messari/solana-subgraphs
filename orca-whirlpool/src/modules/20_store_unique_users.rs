@@ -28,10 +28,21 @@ pub fn store_unique_users(clock: Clock, raw_events: Events, store: StoreSetIfNot
 
 fn get_user_address(event: Type) -> Option<String> {
     match event {
+        // increase liquidity
         Type::IncreaseLiquidity(e) => Some(e.accounts.as_ref()?.position_authority.clone()),
+        Type::IncreaseLiquidityV2(e) => Some(e.accounts.as_ref()?.position_authority.clone()),
+
+        // decrease liquidity
         Type::DecreaseLiquidity(e) => Some(e.accounts.as_ref()?.position_authority.clone()),
+        Type::DecreaseLiquidityV2(e) => Some(e.accounts.as_ref()?.position_authority.clone()),
+
+        // two hop swap
         Type::TwoHopSwap(e) => Some(e.accounts.as_ref()?.token_authority.clone()),
+        Type::TwoHopSwapV2(e) => Some(e.accounts.as_ref()?.token_authority.clone()),
+
+        // swap
         Type::Swap(e) => Some(e.accounts.as_ref()?.token_authority.clone()),
+        Type::SwapV2(e) => Some(e.accounts.as_ref()?.token_authority.clone()),
         _ => None,
     }
 }
