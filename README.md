@@ -26,10 +26,10 @@ For more details on the Orca Whirlpool subgraph, refer to its specific README: [
 To build and run a subgraph:
 
 1. Navigate to the subgraph directory (e.g., `cd orca-whirlpool`)
-2. Install dependencies: `cargo build`
-3. Generate protocol buffers: `cargo protogen`
-4. Build the subgraph: `cargo build --target wasm32-unknown-unknown --release`
-5. Run the substream: `cargo stream`
+2. Generate protocol buffers: `make protogen`
+3. Build the substream: `make build`
+4. Run the substream: `make stream`
+5. Deploy to The Graph: `graph deploy --studio <location> --delpoy-key <deployment key>`
 
 ## Development
 

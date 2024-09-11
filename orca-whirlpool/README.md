@@ -55,9 +55,9 @@ The substream uses several stores to maintain state:
 To build and run the substream:
 
 ```bash
-cargo protogen
-cargo build
-cargo stream
+make protogen
+make build
+make stream
 ```
 
 ## Adding Support for New Instructions
