@@ -16,5 +16,4 @@ borsh = { version = "1.5.0", features = ["derive"] }
 substreams = { workspace = true }
 substreams-solana = { workspace = true }
 substreams-entity-change = { workspace = true }
-substreams-solana-program-instructions = { workspace = true }
 derive_deserialize = { path = "../derive_deserialize" }

@@ -109,10 +109,18 @@ message Event {
   oneof type {
     InitializePool initialize_pool = 10;
     InitializePoolV2 initialize_pool_v2 = 11;
+    
     IncreaseLiquidity increase_liquidity = 20;
+    IncreaseLiquidityV2 increase_liquidity_v2 = 21;
+    
     DecreaseLiquidity decrease_liquidity = 30;
+    DecreaseLiquidityV2 decrease_liquidity_v2 = 31;
+    
     TwoHopSwap two_hop_swap = 40;
+    TwoHopSwapV2 two_hop_swap_v2 = 41;
+    
     OrcaSwap swap = 50;
+    OrcaSwapV2 swap_v2 = 51;
   }
 
   uint64 slot = 100;
@@ -206,6 +214,44 @@ message IncreaseLiquidity {
   }
 }
 
+message IncreaseLiquidityV2 {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+      string liquidity_amount = 1;
+      
+      string token_max_a = 2;
+      string token_max_b = 3;
+
+      optional string amount_a = 4;
+      optional string amount_a_pre = 5;
+      optional string amount_a_post = 6;
+
+      optional string amount_b = 7;
+      optional string amount_b_pre = 8;
+      optional string amount_b_post = 9;
+  }
+
+  message Accounts {
+    string whirlpool = 1;
+    string token_program_a = 2;
+    string token_program_b = 3;
+    string memo_program = 4;
+    string position_authority = 5;
+    string position = 6;
+    string position_token_account = 7;
+    string token_mint_a = 8;
+    string token_mint_b = 9;
+    string token_owner_account_a = 10;
+    string token_owner_account_b = 11;
+    string token_vault_a = 12;
+    string token_vault_b = 13;
+    string tick_array_lower = 14;
+    string tick_array_upper = 15;
+  }
+}
+
 message DecreaseLiquidity {
   Instruction instruction = 1;
   Accounts accounts = 2;
@@ -238,6 +284,45 @@ message DecreaseLiquidity {
     string token_vault_b = 9;
     string tick_array_lower = 10;
     string tick_array_upper = 11;
+  }
+}
+
+message DecreaseLiquidityV2 {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+      string liquidity_amount = 1;
+      
+      string token_min_a = 2;
+      string token_min_b = 3;
+      
+      optional string amount_a = 4;
+      optional string amount_a_pre = 5;
+      optional string amount_a_post = 6;
+
+      optional string amount_b = 7;
+      optional string amount_b_pre = 8;
+      optional string amount_b_post = 9;
+
+  }
+
+  message Accounts {
+    string whirlpool = 1;
+    string token_program_a = 2;
+    string token_program_b = 3;
+    string memo_program = 4;
+    string position_authority = 5;
+    string position = 6;
+    string position_token_account = 7;
+    string token_mint_a = 8;
+    string token_mint_b = 9;
+    string token_owner_account_a = 10;
+    string token_owner_account_b = 11;
+    string token_vault_a = 12;
+    string token_vault_b = 13;
+    string tick_array_lower = 14;
+    string tick_array_upper = 15;
   }
 }
 
@@ -300,6 +385,68 @@ message TwoHopSwap {
   }
 }
 
+message TwoHopSwapV2 {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+    string amount = 1;
+    
+    optional string amount_a_one = 2;
+    optional string amount_b_one = 3;
+
+    optional string amount_a_one_pre = 4;
+    optional string amount_a_one_post = 5;
+
+    optional string amount_b_one_pre = 6;
+    optional string amount_b_one_post = 7;
+    
+    optional string amount_a_two = 8;
+    optional string amount_b_two = 9;
+
+    optional string amount_a_two_pre = 10;
+    optional string amount_a_two_post = 11;
+
+    optional string amount_b_two_pre = 12;
+    optional string amount_b_two_post = 13;
+
+    string other_amount_threshold = 14;
+    
+    bool amount_specified_is_input = 15;
+    bool a_to_b_one = 16;
+    bool a_to_b_two = 17;
+    
+    string sqrt_price_limit_one = 18;
+    string sqrt_price_limit_two = 19;
+  }
+  message Accounts {
+    string whirlpool_one = 1;
+    string whirlpool_two = 2;
+    string token_mint_input = 3;
+    string token_mint_intermediate = 4;
+    string token_mint_output = 5;
+    string token_program_input = 6;
+    string token_program_intermediate = 7;
+    string token_program_output = 8;
+    string token_owner_account_input = 9;
+    string token_vault_one_input = 10;
+    string token_vault_one_intermediate = 11;
+    string token_vault_two_intermediate = 12;
+    string token_vault_two_output = 13;
+    string token_owner_account_output = 14;
+    string token_authority = 15;
+    string tick_array_one0 = 16;
+    string tick_array_one1 = 17;
+    string tick_array_one2 = 18;
+    string tick_array_two0 = 19;
+    string tick_array_two1 = 20;
+    string tick_array_two2 = 21;
+    string oracle_one = 22;
+    string oracle_two = 23;
+    string memo_program = 24;
+  }
+}
+
 message OrcaSwap {
   Instruction instruction = 1;
   Accounts accounts = 2;
@@ -335,5 +482,48 @@ message OrcaSwap {
     string tick_array_1 = 9;
     string tick_array_2 = 10;
     string oracle = 11;
+  }
+}
+
+
+message OrcaSwapV2 {
+  Instruction instruction = 1;
+  Accounts accounts = 2;
+
+  message Instruction {
+    string amount = 1;
+    
+    optional string amount_a_pre = 2;
+    optional string amount_a_post = 3;
+
+    optional string amount_b_pre = 4;
+    optional string amount_b_post = 5;
+
+    optional string amount_a = 6;
+    optional string amount_b = 7;
+    
+    string other_amount_threshold = 8;
+    string sqrt_price_limit = 9;
+    
+    bool amount_specified_is_input = 10;
+    bool a_to_b = 11;
+  }
+
+  message Accounts {
+    string token_program_a = 1;
+    string token_program_b = 2;
+    string memo_program = 3;
+    string token_authority = 4;
+    string whirlpool = 5;
+    string token_mint_a = 6;
+    string token_mint_b = 7;
+    string token_owner_account_a = 8;
+    string token_vault_a = 9;
+    string token_owner_account_b = 10;
+    string token_vault_b = 11;
+    string tick_array_0 = 12;
+    string tick_array_1 = 13;
+    string tick_array_2 = 14;
+    string oracle = 15;
   }
 }
