@@ -181,9 +181,9 @@ modules:
         mode: deltas
       - store: store_volume_by_token_amount
         mode: deltas
-      # - map: map_deposits
-      # - map: map_withdraws
-      # - map: map_swaps
+      - map: map_deposits
+      - map: map_withdraws
+      - map: map_swaps
     output:
       type: proto:sf.substreams.sink.entity.v1.EntityChanges
 

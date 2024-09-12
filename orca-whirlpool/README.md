@@ -11,6 +11,10 @@ The Orca-Whirlpool substream is designed to:
 3. Store and update cumulative statistics
 4. Generate entity changes for downstream consumers (e.g., Graph Protocol) to enable efficient data querying and analysis
 
+## Usage
+
+Refer to the [Repository README](../README.md) for instructions on how to build and run the substream.
+
 ## Key Components
 
 ### Modules
@@ -50,16 +54,6 @@ The substream uses several stores to maintain state:
 - `store_pool_balances`: Stores pool token balances
 - `store_pool_liquidity`: Tracks pool liquidity
 
-## Usage
-
-To build and run the substream:
-
-```bash
-make protogen
-make build
-make stream
-```
-
 ## Adding Support for New Instructions
 
 To add support for new Orca Whirlpool instructions:
@@ -69,16 +63,6 @@ To add support for new Orca Whirlpool instructions:
 3. Create a new mapping function in the appropriate module (e.g., `map_pools.rs`, `map_deposits.rs`, etc.) to process the new instruction data.
 4. Update the relevant stores to accommodate any new data fields.
 5. Modify the `graph_out` module to include the new data in the entity changes if necessary.
-
-## Including Swaps, Deposits, and Withdrawals
-
-To include swaps, deposits, and withdrawals in the substream output:
-
-1. Open the `src/graph_out.rs` file.
-2. Locate the commented-out sections for swaps, deposits, and withdrawals.
-3. Uncomment the relevant code blocks to include these entities in the output.
-4. Ensure that the corresponding stores (e.g., `store_swaps`, `store_deposits`, `store_withdraws`) are properly populated in their respective mapping functions.
-
 
 ### Graph
 

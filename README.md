@@ -4,22 +4,7 @@ This repository contains subgraphs for indexing and querying data from various S
 
 ## Overview
 
-Solana Subgraphs use [The Graph](https://thegraph.com/) protocol to index and query blockchain data efficiently. This project leverages Substreams technology to process Solana blockchain data and generate entities for Graph Protocol indexing.
-
-## Subgraphs
-
-### Orca Whirlpool
-
-The Orca Whirlpool subgraph indexes data from the Orca Whirlpool protocol on the Solana blockchain. It processes transactions related to liquidity pools, swaps, deposits, and withdrawals.
-
-Key features:
-- Indexes pool creation and updates
-- Tracks liquidity deposits and withdrawals
-- Records swap events
-- Maintains cumulative statistics
-
-For more details on the Orca Whirlpool subgraph, refer to its specific README: [Orca Whirlpool README](./orca-whirlpool/README.md)
-
+Solana Subgraphs use [The Graph](https://thegraph.com/) protocol to index and query blockchain data efficiently. This project leverages Substreams technology from [StreamingFast](https://www.streamingfast.io/) to process Solana blockchain data and generate entities for Graph Protocol indexing.
 
 ## Getting Started
 
@@ -32,9 +17,7 @@ To build and run a subgraph:
 5(a). If you want to run the substream locally: `make stream`
 5(b). If you want to deploy to The Graph: `graph deploy --studio <location> --deploy-key <deployment key>`
 
-## Development
-
-To add support for new instructions or modify existing ones, refer to the "Adding Support for New Instructions" section in the Orca Whirlpool README.
+Refer to [Substreams Docs](https://substreams.streamingfast.io/documentation) for more information on setting up and running a substream.
 
 ## Contributing
 
