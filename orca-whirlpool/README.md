@@ -52,13 +52,7 @@ The substream uses several stores to maintain state:
 
 ## Usage
 
-To build and run the substream:
-
-```bash
-make protogen
-make build
-make stream
-```
+Refer to the [Repository README](../README.md) for instructions on how to build and run the substream.
 
 ## Adding Support for New Instructions
 
