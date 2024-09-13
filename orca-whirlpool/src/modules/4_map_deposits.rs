@@ -49,7 +49,7 @@ fn process_deposit<T: DepositInstruction>(
     };
 
     deposits.push(Deposit {
-        id: format!("{}-{}", event.txn_id, event.slot),
+        id: format!("DEPOSIT-{}-{}", event.txn_id, event.slot),
 
         token_a: pool.token_mint_a,
         token_b: pool.token_mint_b,

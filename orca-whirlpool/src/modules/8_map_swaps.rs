@@ -125,7 +125,7 @@ fn handle_swap(
         };
 
     Some(Swap {
-        id: format!("{}-{}", event.txn_id, event.slot),
+        id: format!("SWAP-{}-{}", event.txn_id, event.slot),
 
         token_in,
         token_out,
