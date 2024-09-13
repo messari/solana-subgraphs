@@ -49,7 +49,7 @@ fn process_withdraw<T: WithdrawInstruction>(
     };
 
     withdraws.push(Withdraw {
-        id: format!("{}-{}", event.txn_id.clone(), event.slot),
+        id: format!("WITHDRAW-{}-{}", event.txn_id.clone(), event.slot),
 
         token_a: pool.token_mint_a,
         token_b: pool.token_mint_b,
