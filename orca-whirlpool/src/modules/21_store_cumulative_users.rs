@@ -1,3 +1,4 @@
+use substreams::pb::substreams::store_delta::Operation;
 use substreams::pb::substreams::Clock;
 use substreams::skip_empty_output;
 use substreams::store::{DeltaBigInt, Deltas, StoreAddInt64, StoreDelete};
@@ -20,16 +21,22 @@ pub fn store_cumulative_users(
         0,
         &StoreKey::UsageMetricsDailySnapshot(day_id - 1, None).unique_id(),
     );
+    for delta in unique_users_delta.deltas {
+        let key = delta.get_key();
 
-    for _ in unique_users_delta.deltas {
-        store.add_many(
-            0,
-            &vec![
-                StoreKey::CumulativeUsers.unique_id(),
+        if key.starts_with(&StoreKey::User.unique_id())
+            && delta.get_operation() == Operation::Create
+        {
+            // Add to cumulative users
+            store.add(0, StoreKey::CumulativeUsers.unique_id(), 1);
+        } else {
+            // Add to daily active users
+            store.add(
+                0,
                 StoreKey::UsageMetricsDailySnapshot(day_id, Some(Box::new(StoreKey::ActiveUsers)))
                     .get_snapshot_key(None),
-            ],
-            1,
-        );
+                1,
+            );
+        }
     }
 }
